@@ -119,7 +119,7 @@ export default function Login() {
           <h1 className="font-heading text-gold text-lg sm:text-xl leading-relaxed mb-3">
             Enter the Realm
           </h1>
-          <p className="text-cream/60 text-2xl tracking-widest">ChoresOS</p>
+          <p className="text-cream/60 text-2xl tracking-widest">QuestOS</p>
           <div className="mt-3 mx-auto w-32 h-[2px] bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         </div>
 

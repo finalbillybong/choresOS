@@ -81,7 +81,7 @@ export default function Layout({ children }) {
           className="flex items-center gap-2 px-4 py-5 cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <span className="font-heading text-gold text-sm tracking-wide">ChoresOS</span>
+          <span className="font-heading text-gold text-sm tracking-wide">QuestOS</span>
         </div>
 
         <nav className="flex flex-col gap-1 px-3 mt-2 flex-1">
@@ -133,7 +133,7 @@ export default function Layout({ children }) {
             className="flex items-center gap-2 cursor-pointer md:hidden"
             onClick={() => navigate('/')}
           >
-            <span className="font-heading text-gold text-xs tracking-wide">ChoresOS</span>
+            <span className="font-heading text-gold text-xs tracking-wide">QuestOS</span>
           </div>
 
           <div className="hidden md:block" />

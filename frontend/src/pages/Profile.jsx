@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import AvatarDisplay from '../components/AvatarDisplay';
+import AvatarEditor from '../components/AvatarEditor';
 import {
   UserCircle,
   Save,
@@ -15,11 +16,14 @@ import {
   Award,
   Star,
   Loader2,
+  Paintbrush,
 } from 'lucide-react';
 
 export default function Profile() {
   const { user, logout, updateUser } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
+
+  const [showEditor, setShowEditor] = useState(false);
 
   // Display name editing
   const [displayName, setDisplayName] = useState(user?.display_name || '');
@@ -157,11 +161,20 @@ export default function Profile() {
 
       {/* Avatar + Name + Role */}
       <div className="game-panel p-6 flex flex-col items-center gap-4">
-        <AvatarDisplay
-          config={user?.avatar_config}
-          size="lg"
-          name={user?.display_name || user?.username}
-        />
+        <button
+          onClick={() => setShowEditor((v) => !v)}
+          className="relative group"
+          aria-label="Customise avatar"
+        >
+          <AvatarDisplay
+            config={user?.avatar_config}
+            size="lg"
+            name={user?.display_name || user?.username}
+          />
+          <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Paintbrush size={24} className="text-gold" />
+          </div>
+        </button>
 
         {/* Role badge */}
         <span
@@ -200,6 +213,9 @@ export default function Profile() {
           )}
         </div>
       </div>
+
+      {/* Avatar Editor */}
+      {showEditor && <AvatarEditor />}
 
       {/* Stats Summary */}
       <div className="game-panel p-5">
