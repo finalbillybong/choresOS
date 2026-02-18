@@ -239,23 +239,11 @@ async def refresh(
     if stored is None:
         raise HTTPException(status_code=401, detail="Refresh token not found")
 
-    # Revoked-token reuse detection: revoke ALL tokens for this user
+    # Revoked token — likely a concurrent/duplicate refresh request.
+    # Just reject this individual request; other sessions stay valid.
     if stored.is_revoked:
-        await db.execute(
-            select(RefreshToken).where(RefreshToken.user_id == user_id)
-        )
-        # Revoke all tokens for this user
-        all_result = await db.execute(
-            select(RefreshToken).where(
-                RefreshToken.user_id == user_id,
-                RefreshToken.is_revoked == False,
-            )
-        )
-        for tok in all_result.scalars().all():
-            tok.is_revoked = True
-        await db.commit()
         _clear_refresh_cookie(response)
-        raise HTTPException(status_code=401, detail="Token reuse detected, all sessions revoked")
+        raise HTTPException(status_code=401, detail="Refresh token already used")
 
     # Revoke old token
     stored.is_revoked = True
