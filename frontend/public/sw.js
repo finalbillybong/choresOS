@@ -1,4 +1,4 @@
-const CACHE_NAME = 'choresos-v1';
+const CACHE_NAME = 'choresos-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -24,9 +24,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Never cache auth endpoints
+  // Let the browser handle auth requests natively (preserves cookies reliably)
   if (url.pathname.startsWith('/api/auth')) {
-    event.respondWith(fetch(request));
     return;
   }
 
