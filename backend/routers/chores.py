@@ -272,6 +272,45 @@ async def create_chore(
     return ChoreResponse.model_validate(chore)
 
 
+@router.post("/cleanup-all-stale")
+async def cleanup_all_stale(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_parent),
+):
+    """Nuke ALL stale pending assignments and exclusions across every chore.
+
+    This removes:
+    - All pending assignments (past AND future) — auto-gen will recreate correct ones
+    - All ChoreExclusion records (so auto-gen works fresh)
+    """
+
+    # 1. Delete ALL pending assignments (past and future ghosts from testing)
+    pending_result = await db.execute(
+        select(ChoreAssignment).where(
+            ChoreAssignment.status == AssignmentStatus.pending,
+        )
+    )
+    pending = pending_result.scalars().all()
+    for a in pending:
+        await db.delete(a)
+    pending_count = len(pending)
+
+    # 2. Delete ALL exclusions (they block auto-gen)
+    all_excl_result = await db.execute(select(ChoreExclusion))
+    all_excl = all_excl_result.scalars().all()
+    for e in all_excl:
+        await db.delete(e)
+    excl_count = len(all_excl)
+
+    await db.commit()
+
+    return {
+        "message": f"Cleaned up {pending_count} pending assignments and {excl_count} exclusions",
+        "pending_removed": pending_count,
+        "exclusions_removed": excl_count,
+    }
+
+
 # ---------- GET /{id} ----------
 @router.get("/{chore_id}", response_model=ChoreResponse)
 async def get_chore(
