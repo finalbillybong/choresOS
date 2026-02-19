@@ -371,6 +371,18 @@ async def accept_trade(
         },
     )
 
+    # Notify the accepting kid so their dashboard refreshes with the new quest
+    await ws_manager.send_to_user(
+        current_user.id,
+        {
+            "type": "trade_accepted",
+            "data": {
+                "assignment_id": assignment.id,
+                "chore_title": chore_title,
+            },
+        },
+    )
+
     return {"message": "Trade accepted", "assignment_id": assignment.id}
 
 
@@ -436,3 +448,62 @@ async def deny_trade(
     )
 
     return {"message": "Trade denied", "assignment_id": assignment.id}
+
+
+@router.delete("/assignments/{assignment_id}", status_code=204)
+async def remove_assignment(
+    assignment_id: int,
+    all_future: bool = Query(
+        False,
+        description="Also remove all future pending instances of this chore for the same kid",
+    ),
+    parent: User = Depends(require_parent),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a pending assignment. Parent+ only.
+
+    Only pending assignments can be removed — completed, verified, or
+    skipped assignments are left intact.
+
+    If ``all_future=true``, every pending assignment for the same
+    chore + kid from today onward is also deleted (useful for
+    recurring quests).
+    """
+    result = await db.execute(
+        select(ChoreAssignment)
+        .options(selectinload(ChoreAssignment.chore))
+        .where(ChoreAssignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    if assignment.status != AssignmentStatus.pending:
+        raise HTTPException(
+            status_code=400,
+            detail="Only pending assignments can be removed",
+        )
+
+    if all_future:
+        # Remove all pending assignments for this chore + kid from this date onward
+        future_result = await db.execute(
+            select(ChoreAssignment).where(
+                ChoreAssignment.chore_id == assignment.chore_id,
+                ChoreAssignment.user_id == assignment.user_id,
+                ChoreAssignment.date >= assignment.date,
+                ChoreAssignment.status == AssignmentStatus.pending,
+            )
+        )
+        for a in future_result.scalars().all():
+            await db.delete(a)
+    else:
+        await db.delete(assignment)
+
+    await db.commit()
+
+    await ws_manager.broadcast(
+        {"type": "data_changed", "data": {"entity": "assignment"}},
+        exclude_user=parent.id,
+    )
+
+    return None
