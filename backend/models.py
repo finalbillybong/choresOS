@@ -172,6 +172,18 @@ class ChoreRotation(Base):
     chore = relationship("Chore")
 
 
+class ChoreExclusion(Base):
+    """Tracks intentionally removed recurring assignment slots so that
+    auto-generation does not recreate them."""
+    __tablename__ = "chore_exclusions"
+    __table_args__ = (UniqueConstraint("chore_id", "user_id", "date"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chore_id: Mapped[int] = mapped_column(ForeignKey("chores.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Reward(Base):
     __tablename__ = "rewards"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
