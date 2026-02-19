@@ -120,7 +120,7 @@ export default function Wishlist() {
   }
 
   const renderItem = (item, canDelete = false, canConvert = false) => {
-    const isConverted = item.converted || item.reward_id;
+    const isConverted = !!item.converted_to_reward_id;
 
     return (
       <div
