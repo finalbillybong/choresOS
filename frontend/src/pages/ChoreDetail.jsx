@@ -99,6 +99,7 @@ export default function ChoreDetail() {
   // Rotation state (parent only)
   const [rotation, setRotation] = useState(null);
   const [allKids, setAllKids] = useState([]);
+  const [selectedCadence, setSelectedCadence] = useState('weekly');
 
   const fetchRotation = useCallback(async () => {
     if (!isParent) return;
@@ -207,7 +208,7 @@ export default function ChoreDetail() {
     try {
       await api('/api/rotations', {
         method: 'POST',
-        body: { chore_id: parseInt(id), kid_ids: allKids.map((k) => k.id), cadence: 'weekly' },
+        body: { chore_id: parseInt(id), kid_ids: allKids.map((k) => k.id), cadence: selectedCadence },
       });
       await fetchRotation();
       setActionMessage('Rotation created.');
@@ -227,6 +228,23 @@ export default function ChoreDetail() {
       setActionMessage('Rotation advanced to next kid.');
     } catch (err) {
       setActionMessage(err.message || 'Could not advance rotation.');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleUpdateCadence = async (newCadence) => {
+    if (!rotation) return;
+    setActionLoading('rotation');
+    try {
+      await api(`/api/rotations/${rotation.id}`, {
+        method: 'PUT',
+        body: { cadence: newCadence },
+      });
+      await fetchRotation();
+      setActionMessage(`Cadence updated to ${newCadence}.`);
+    } catch (err) {
+      setActionMessage(err.message || 'Could not update cadence.');
     } finally {
       setActionLoading('');
     }
@@ -482,7 +500,17 @@ export default function ChoreDetail() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted">Cadence:</span>
-                <span className="text-cream capitalize">{rotation.cadence}</span>
+                <select
+                  value={rotation.cadence}
+                  onChange={(e) => handleUpdateCadence(e.target.value)}
+                  disabled={actionLoading === 'rotation'}
+                  className="bg-surface-raised text-cream text-sm rounded-lg border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="fortnightly">Fortnightly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(rotation.kid_ids || []).map((kidId, idx) => {
@@ -523,10 +551,23 @@ export default function ChoreDetail() {
               </div>
             </div>
           ) : (
-            <div>
-              <p className="text-muted text-xs mb-3">
+            <div className="space-y-3">
+              <p className="text-muted text-xs">
                 No rotation set. Create one to automatically rotate this quest between kids.
               </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted">Cadence:</span>
+                <select
+                  value={selectedCadence}
+                  onChange={(e) => setSelectedCadence(e.target.value)}
+                  className="bg-surface-raised text-cream text-sm rounded-lg border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="fortnightly">Fortnightly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
               <button
                 onClick={handleCreateRotation}
                 disabled={actionLoading === 'rotation' || allKids.length < 2}

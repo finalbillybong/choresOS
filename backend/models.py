@@ -69,6 +69,8 @@ class NotificationType(str, enum.Enum):
 class RotationCadence(str, enum.Enum):
     daily = "daily"
     weekly = "weekly"
+    fortnightly = "fortnightly"
+    monthly = "monthly"
 
 
 class RefreshToken(Base):

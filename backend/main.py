@@ -71,6 +71,12 @@ async def daily_reset_task():
                             elif rotation.cadence.value == "weekly":
                                 days_since = (datetime.now(timezone.utc) - rotation.last_rotated).days
                                 should_advance = days_since >= 7
+                            elif rotation.cadence.value == "fortnightly":
+                                days_since = (datetime.now(timezone.utc) - rotation.last_rotated).days
+                                should_advance = days_since >= 14
+                            elif rotation.cadence.value == "monthly":
+                                days_since = (datetime.now(timezone.utc) - rotation.last_rotated).days
+                                should_advance = days_since >= 30
 
                             if should_advance and rotation.last_rotated is not None:
                                 rotation.current_index = (rotation.current_index + 1) % len(rotation.kid_ids)
