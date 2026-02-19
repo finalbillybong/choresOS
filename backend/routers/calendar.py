@@ -8,6 +8,7 @@ from backend.database import get_db
 from backend.models import (
     Chore,
     ChoreAssignment,
+    ChoreExclusion,
     ChoreRotation,
     User,
     UserRole,
@@ -52,9 +53,24 @@ async def _auto_generate_assignments(
 ) -> None:
     """Auto-generate ChoreAssignment records for recurring chores
     that don't already have records for the given week.
+
+    Slots recorded in ``chore_exclusions`` are skipped so that
+    intentionally removed assignments are not recreated.
     """
     week_end = week_start + timedelta(days=6)
     week_dates = [week_start + timedelta(days=i) for i in range(7)]
+
+    # Pre-load exclusions for this week
+    excl_result = await db.execute(
+        select(ChoreExclusion).where(
+            ChoreExclusion.date >= week_start,
+            ChoreExclusion.date <= week_end,
+        )
+    )
+    exclusion_set = {
+        (e.chore_id, e.user_id, e.date)
+        for e in excl_result.scalars().all()
+    }
 
     # Get all active recurring chores
     result = await db.execute(
@@ -88,6 +104,10 @@ async def _auto_generate_assignments(
                 continue
 
             for user_id in user_ids:
+                # Skip if this slot was intentionally removed
+                if (chore.id, user_id, day) in exclusion_set:
+                    continue
+
                 # Check if assignment already exists (unique constraint: chore_id, user_id, date)
                 result = await db.execute(
                     select(ChoreAssignment).where(
@@ -484,6 +504,14 @@ async def remove_assignment(
             detail="Only pending assignments can be removed",
         )
 
+    # For recurring chores, record exclusions so auto-generation
+    # won't recreate the removed assignments.
+    is_recurring = (
+        assignment.chore
+        and assignment.chore.recurrence
+        and assignment.chore.recurrence != Recurrence.once
+    )
+
     if all_future:
         # Remove all pending assignments for this chore + kid from this date onward
         future_result = await db.execute(
@@ -495,8 +523,20 @@ async def remove_assignment(
             )
         )
         for a in future_result.scalars().all():
+            if is_recurring:
+                db.add(ChoreExclusion(
+                    chore_id=a.chore_id,
+                    user_id=a.user_id,
+                    date=a.date,
+                ))
             await db.delete(a)
     else:
+        if is_recurring:
+            db.add(ChoreExclusion(
+                chore_id=assignment.chore_id,
+                user_id=assignment.user_id,
+                date=assignment.date,
+            ))
         await db.delete(assignment)
 
     await db.commit()
