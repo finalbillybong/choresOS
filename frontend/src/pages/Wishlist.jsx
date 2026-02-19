@@ -51,6 +51,13 @@ export default function Wishlist() {
     fetchWishlist();
   }, [fetchWishlist]);
 
+  // Live updates via WebSocket
+  useEffect(() => {
+    const handler = () => { fetchWishlist(); };
+    window.addEventListener('ws:message', handler);
+    return () => window.removeEventListener('ws:message', handler);
+  }, [fetchWishlist]);
+
   const addItem = async () => {
     if (!newTitle.trim()) return;
     setAddSubmitting(true);

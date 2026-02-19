@@ -15,6 +15,7 @@ from backend.schemas import (
     RewardResponse,
 )
 from backend.dependencies import get_current_user, require_parent
+from backend.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api/wishlist", tags=["wishlist"])
 
@@ -65,6 +66,7 @@ async def add_wishlist_item(
     db.add(item)
     await db.commit()
     await db.refresh(item)
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "wishlist"}}, exclude_user=user.id)
     return WishlistResponse.model_validate(item)
 
 
@@ -121,6 +123,7 @@ async def delete_wishlist_item(
 
     await db.delete(item)
     await db.commit()
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "wishlist"}}, exclude_user=user.id)
     return {"detail": "Wishlist item deleted"}
 
 
@@ -154,8 +157,12 @@ async def convert_to_reward(
     await db.flush()
 
     # Remove the wish now that it's been converted to a reward
+    kid_user_id = item.user_id
     await db.delete(item)
 
     await db.commit()
     await db.refresh(reward)
+    # Notify the kid that their wish was converted, and broadcast wishlist change
+    await ws_manager.send_to_user(kid_user_id, {"type": "data_changed", "data": {"entity": "wishlist"}})
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "reward"}}, exclude_user=parent.id)
     return RewardResponse.model_validate(reward)
