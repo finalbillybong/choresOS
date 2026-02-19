@@ -1,5 +1,5 @@
 services:
-  choresos:
+  questos:
     build: .
     ports:
       - "8122:8122"

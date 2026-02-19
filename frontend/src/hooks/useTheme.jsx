@@ -4,13 +4,13 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('choresos-theme');
+    const saved = localStorage.getItem('questos-theme');
     if (saved) return saved;
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
 
   useEffect(() => {
-    localStorage.setItem('choresos-theme', theme);
+    localStorage.setItem('questos-theme', theme);
     document.documentElement.classList.toggle('light-mode', theme === 'light');
   }, [theme]);
 

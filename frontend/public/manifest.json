@@ -1,6 +1,6 @@
 {
-  "name": "ChoresOS — Quest Board",
-  "short_name": "ChoresOS",
+  "name": "QuestOS — Quest Board",
+  "short_name": "QuestOS",
   "description": "Gamified family chore management with RPG theming",
   "start_url": "/",
   "display": "standalone",

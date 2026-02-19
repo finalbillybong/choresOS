@@ -1,4 +1,4 @@
-const CACHE_NAME = 'choresos-v1';
+const CACHE_NAME = 'questos-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

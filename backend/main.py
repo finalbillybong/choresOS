@@ -124,7 +124,7 @@ async def lifespan(app: FastAPI):
     task.cancel()
 
 
-app = FastAPI(title="ChoresOS", lifespan=lifespan)
+app = FastAPI(title="QuestOS", lifespan=lifespan)
 
 # CORS - restrictive
 app.add_middleware(
