@@ -27,11 +27,13 @@ function Loading() {
 }
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshSession } = useAuth();
 
   const handleWsMessage = useCallback((msg) => {
+    // Refresh user object (points_balance, etc.) on every WS event
+    refreshSession();
     window.dispatchEvent(new CustomEvent('ws:message', { detail: msg }));
-  }, []);
+  }, [refreshSession]);
 
   useWebSocket(user?.id, handleWsMessage);
 
