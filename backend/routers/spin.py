@@ -25,7 +25,7 @@ SPIN_MIN = 1
 SPIN_MAX = 25
 
 
-async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | None]:
+async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | None, str | None]:
     """
     Determine if the user is eligible to spin today.
 
@@ -34,19 +34,10 @@ async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | Non
        (or had no assignments yesterday).
     2. The user must not already have a spin result for today.
 
-    Returns (can_spin, last_result_points_or_none).
+    Returns (can_spin, last_result_points_or_none, reason_or_none).
     """
     today = date.today()
     yesterday = today - timedelta(days=1)
-
-    # Check if already spun today
-    result = await db.execute(
-        select(SpinResult).where(
-            SpinResult.user_id == user.id,
-            SpinResult.spin_date == today,
-        )
-    )
-    today_spin = result.scalar_one_or_none()
 
     # Get last spin result for display
     last_result: int | None = None
@@ -60,8 +51,17 @@ async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | Non
     if last_spin is not None:
         last_result = last_spin.points_won
 
+    # Check if already spun today
+    result = await db.execute(
+        select(SpinResult).where(
+            SpinResult.user_id == user.id,
+            SpinResult.spin_date == today,
+        )
+    )
+    today_spin = result.scalar_one_or_none()
+
     if today_spin is not None:
-        return False, last_result
+        return False, last_result, "You already spun the wheel today! Come back tomorrow."
 
     # Check yesterday's chore assignments
     result = await db.execute(
@@ -74,14 +74,20 @@ async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | Non
 
     # If no assignments yesterday, eligible
     if not yesterday_assignments:
-        return True, last_result
+        return True, last_result, None
 
     # All yesterday assignments must be completed or verified (not pending/skipped)
     all_done = all(
         a.status in (AssignmentStatus.completed, AssignmentStatus.verified)
         for a in yesterday_assignments
     )
-    return all_done, last_result
+    if not all_done:
+        pending = sum(
+            1 for a in yesterday_assignments
+            if a.status not in (AssignmentStatus.completed, AssignmentStatus.verified)
+        )
+        return False, last_result, f"Complete yesterday's quests first! You have {pending} unfinished."
+    return True, last_result, None
 
 
 # ---------- GET /availability ----------
@@ -91,8 +97,8 @@ async def check_availability(
     user: User = Depends(get_current_user),
 ):
     """Check if the user can spin today."""
-    can_spin, last_result = await _can_spin_today(db, user)
-    return SpinAvailabilityResponse(can_spin=can_spin, last_result=last_result)
+    can_spin, last_result, reason = await _can_spin_today(db, user)
+    return SpinAvailabilityResponse(can_spin=can_spin, last_result=last_result, reason=reason)
 
 
 # ---------- POST /spin ----------
@@ -102,11 +108,11 @@ async def execute_spin(
     user: User = Depends(get_current_user),
 ):
     """Execute the daily spin. Validates eligibility, generates random XP, awards points."""
-    can_spin, _ = await _can_spin_today(db, user)
+    can_spin, _, reason = await _can_spin_today(db, user)
     if not can_spin:
         raise HTTPException(
             status_code=400,
-            detail="Cannot spin today. Either you already spun or did not complete yesterday's chores.",
+            detail=reason or "Cannot spin today.",
         )
 
     # Random points between SPIN_MIN and SPIN_MAX inclusive
