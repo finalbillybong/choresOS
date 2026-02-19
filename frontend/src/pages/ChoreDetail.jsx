@@ -17,6 +17,9 @@ import {
   Clock,
   Shield,
   ScrollText,
+  RotateCw,
+  Trash2,
+  ChevronRight,
 } from 'lucide-react';
 
 const DIFFICULTY_LEVEL = { easy: 1, medium: 2, hard: 3, expert: 4 };
@@ -93,6 +96,19 @@ export default function ChoreDetail() {
   const [actionLoading, setActionLoading] = useState('');
   const [actionMessage, setActionMessage] = useState('');
 
+  // Rotation state (parent only)
+  const [rotation, setRotation] = useState(null);
+  const [allKids, setAllKids] = useState([]);
+
+  const fetchRotation = useCallback(async () => {
+    if (!isParent) return;
+    try {
+      const rotations = await api('/api/rotations');
+      const match = (rotations || []).find((r) => r.chore_id === parseInt(id));
+      setRotation(match || null);
+    } catch { setRotation(null); }
+  }, [id, isParent]);
+
   const fetchChore = useCallback(async () => {
     try {
       setError('');
@@ -107,14 +123,18 @@ export default function ChoreDetail() {
 
   useEffect(() => {
     fetchChore();
-  }, [fetchChore]);
+    fetchRotation();
+    if (isParent) {
+      api('/api/stats/kids').then((data) => setAllKids(data || [])).catch(() => {});
+    }
+  }, [fetchChore, fetchRotation, isParent]);
 
   // Live updates via WebSocket
   useEffect(() => {
-    const handler = () => { fetchChore(); };
+    const handler = () => { fetchChore(); fetchRotation(); };
     window.addEventListener('ws:message', handler);
     return () => window.removeEventListener('ws:message', handler);
-  }, [fetchChore]);
+  }, [fetchChore, fetchRotation]);
 
   const handleComplete = async () => {
     setActionLoading('complete');
@@ -176,6 +196,51 @@ export default function ChoreDetail() {
       await fetchChore();
     } catch (err) {
       setActionMessage(err.message || 'Could not skip the quest.');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleCreateRotation = async () => {
+    if (allKids.length < 2) { setActionMessage('Need at least 2 kids for a rotation.'); return; }
+    setActionLoading('rotation');
+    try {
+      await api('/api/rotations', {
+        method: 'POST',
+        body: { chore_id: parseInt(id), kid_ids: allKids.map((k) => k.id), cadence: 'weekly' },
+      });
+      await fetchRotation();
+      setActionMessage('Rotation created.');
+    } catch (err) {
+      setActionMessage(err.message || 'Could not create rotation.');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleAdvanceRotation = async () => {
+    if (!rotation) return;
+    setActionLoading('rotation');
+    try {
+      await api(`/api/rotations/${rotation.id}/advance`, { method: 'POST' });
+      await fetchRotation();
+      setActionMessage('Rotation advanced to next kid.');
+    } catch (err) {
+      setActionMessage(err.message || 'Could not advance rotation.');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleDeleteRotation = async () => {
+    if (!rotation) return;
+    setActionLoading('rotation');
+    try {
+      await api(`/api/rotations/${rotation.id}`, { method: 'DELETE' });
+      setRotation(null);
+      setActionMessage('Rotation removed.');
+    } catch (err) {
+      setActionMessage(err.message || 'Could not delete rotation.');
     } finally {
       setActionLoading('');
     }
@@ -402,6 +467,76 @@ export default function ChoreDetail() {
               {actionLoading === 'skip' ? 'Skipping...' : 'Skip Today'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Rotation Panel (parent only, recurring chores) */}
+      {isParent && chore.recurrence && chore.recurrence !== 'once' && (
+        <div className="game-panel p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <RotateCw size={18} className="text-purple" />
+            <h2 className="text-cream text-lg font-bold">Kid Rotation</h2>
+          </div>
+
+          {rotation ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted">Cadence:</span>
+                <span className="text-cream capitalize">{rotation.cadence}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(rotation.kid_ids || []).map((kidId, idx) => {
+                  const kid = allKids.find((k) => k.id === kidId);
+                  const isCurrent = idx === rotation.current_index;
+                  return (
+                    <span
+                      key={kidId}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                        isCurrent
+                          ? 'border-purple bg-purple/20 text-purple'
+                          : 'border-border text-muted'
+                      }`}
+                    >
+                      {kid?.display_name || `Kid #${kidId}`}
+                      {isCurrent && ' (current)'}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={handleAdvanceRotation}
+                  disabled={actionLoading === 'rotation'}
+                  className="game-btn game-btn-purple flex items-center gap-1.5 !py-1.5 !px-3 !text-[11px]"
+                >
+                  <ChevronRight size={14} />
+                  Advance
+                </button>
+                <button
+                  onClick={handleDeleteRotation}
+                  disabled={actionLoading === 'rotation'}
+                  className="game-btn game-btn-red flex items-center gap-1.5 !py-1.5 !px-3 !text-[11px]"
+                >
+                  <Trash2 size={14} />
+                  Remove Rotation
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-muted text-xs mb-3">
+                No rotation set. Create one to automatically rotate this quest between kids.
+              </p>
+              <button
+                onClick={handleCreateRotation}
+                disabled={actionLoading === 'rotation' || allKids.length < 2}
+                className="game-btn game-btn-purple flex items-center gap-1.5 !py-1.5 !px-3 !text-[11px]"
+              >
+                <RotateCw size={14} />
+                {allKids.length < 2 ? 'Need 2+ kids' : 'Create Rotation'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
