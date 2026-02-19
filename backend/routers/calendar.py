@@ -403,6 +403,12 @@ async def accept_trade(
         },
     )
 
+    # Broadcast to parents so their calendar view reflects the reassignment
+    await ws_manager.broadcast(
+        {"type": "data_changed", "data": {"entity": "assignment"}},
+        exclude_user=current_user.id,
+    )
+
     return {"message": "Trade accepted", "assignment_id": assignment.id}
 
 
