@@ -1,5 +1,5 @@
 import random
-from datetime import date, timedelta
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
@@ -30,14 +30,14 @@ async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | Non
     Determine if the user is eligible to spin today.
 
     Rules:
-    1. The user must have completed all of yesterday's assigned chores
-       (or had no assignments yesterday).
+    1. The user must have completed all of today's assigned chores
+       (or have no assignments today).
     2. The user must not already have a spin result for today.
+    3. Resets at midnight — missed chores lock the spin until the next day.
 
     Returns (can_spin, last_result_points_or_none, reason_or_none).
     """
     today = date.today()
-    yesterday = today - timedelta(days=1)
 
     # Get last spin result for display
     last_result: int | None = None
@@ -63,30 +63,30 @@ async def _can_spin_today(db: AsyncSession, user: User) -> tuple[bool, int | Non
     if today_spin is not None:
         return False, last_result, "You already spun the wheel today! Come back tomorrow."
 
-    # Check yesterday's chore assignments
+    # Check today's chore assignments
     result = await db.execute(
         select(ChoreAssignment).where(
             ChoreAssignment.user_id == user.id,
-            ChoreAssignment.date == yesterday,
+            ChoreAssignment.date == today,
         )
     )
-    yesterday_assignments = result.scalars().all()
+    today_assignments = result.scalars().all()
 
-    # If no assignments yesterday, eligible
-    if not yesterday_assignments:
+    # If no assignments today, eligible
+    if not today_assignments:
         return True, last_result, None
 
-    # All yesterday assignments must be completed or verified (not pending/skipped)
+    # All today's assignments must be completed or verified
     all_done = all(
         a.status in (AssignmentStatus.completed, AssignmentStatus.verified)
-        for a in yesterday_assignments
+        for a in today_assignments
     )
     if not all_done:
         pending = sum(
-            1 for a in yesterday_assignments
+            1 for a in today_assignments
             if a.status not in (AssignmentStatus.completed, AssignmentStatus.verified)
         )
-        return False, last_result, f"Complete yesterday's quests first! You have {pending} unfinished."
+        return False, last_result, f"Complete all of today's quests to unlock the spin! {pending} remaining."
     return True, last_result, None
 
 
