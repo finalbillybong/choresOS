@@ -51,6 +51,13 @@ export default function Wishlist() {
     fetchWishlist();
   }, [fetchWishlist]);
 
+  // Live updates via WebSocket
+  useEffect(() => {
+    const handler = () => { fetchWishlist(); };
+    window.addEventListener('ws:message', handler);
+    return () => window.removeEventListener('ws:message', handler);
+  }, [fetchWishlist]);
+
   const addItem = async () => {
     if (!newTitle.trim()) return;
     setAddSubmitting(true);
@@ -120,7 +127,7 @@ export default function Wishlist() {
   }
 
   const renderItem = (item, canDelete = false, canConvert = false) => {
-    const isConverted = item.converted || item.reward_id;
+    const isConverted = !!item.converted_to_reward_id;
 
     return (
       <div

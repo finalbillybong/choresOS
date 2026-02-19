@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
@@ -13,16 +14,18 @@ import {
   CheckCheck,
   X,
   Star,
+  Sparkles,
 } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
-const navItems = [
+const ALL_NAV_ITEMS = [
   { label: 'Home', icon: Home, path: '/' },
   { label: 'Quests', icon: Swords, path: '/chores' },
   { label: 'Rewards', icon: Gift, path: '/rewards' },
   { label: 'Inventory', icon: Package, path: '/inventory' },
   { label: 'Wishlist', icon: Star, path: '/wishlist' },
   { label: 'Calendar', icon: CalendarDays, path: '/calendar' },
+  { label: 'Events', icon: Sparkles, path: '/events', parentOnly: true },
 ];
 
 function timeAgo(dateStr) {
@@ -41,7 +44,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const { user } = useAuth();
   const { syncFromUser } = useTheme();
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
+  const { notifications, unreadCount, markRead, markAllRead, refresh } = useNotifications();
 
   // Sync color theme from server on login
   useEffect(() => {
@@ -66,6 +69,9 @@ export default function Layout({ children }) {
   useEffect(() => {
     setShowNotifs(false);
   }, [location.pathname]);
+
+  const isParent = user?.role === 'parent' || user?.role === 'admin';
+  const navItems = ALL_NAV_ITEMS.filter((item) => !item.parentOnly || isParent);
 
   const isActive = (path) => path === '/' ? location.pathname === '/' : (location.pathname === path || location.pathname.startsWith(path + '/'));
 
@@ -188,34 +194,61 @@ export default function Layout({ children }) {
                         No notifications yet.
                       </div>
                     ) : (
-                      notifications.map((n) => (
-                        <button
-                          key={n.id}
-                          onClick={() => {
-                            if (!n.is_read) markRead(n.id);
-                          }}
-                          className={`w-full text-left px-4 py-3.5 border-b border-border/50 hover:bg-surface-raised transition-colors ${
-                            !n.is_read ? 'bg-sky/5' : ''
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            {!n.is_read && (
-                              <span className="mt-1.5 w-2 h-2 rounded-full bg-sky flex-shrink-0" />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="text-cream text-sm font-medium truncate">
-                                {n.title}
-                              </p>
-                              <p className="text-muted text-xs mt-0.5 line-clamp-2">
-                                {n.message}
-                              </p>
-                              <p className="text-muted/60 text-xs mt-1">
-                                {timeAgo(n.created_at)}
-                              </p>
+                      notifications.map((n) => {
+                        const isTrade = n.type === 'trade_proposed' && !n.is_read;
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => { if (!n.is_read && !isTrade) markRead(n.id); }}
+                            className={`w-full text-left px-4 py-3.5 border-b border-border/50 hover:bg-surface-raised transition-colors cursor-pointer ${
+                              !n.is_read ? 'bg-sky/5' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {!n.is_read && (
+                                <span className="mt-1.5 w-2 h-2 rounded-full bg-sky flex-shrink-0" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-cream text-sm font-medium truncate">
+                                  {n.title}
+                                </p>
+                                <p className="text-muted text-xs mt-0.5 line-clamp-2">
+                                  {n.message}
+                                </p>
+                                {isTrade && (
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        api(`/api/calendar/trade/${n.id}/accept`, { method: 'POST' })
+                                          .then(() => refresh())
+                                          .catch(() => {});
+                                      }}
+                                      className="game-btn game-btn-blue !py-1.5 !px-3 !text-[10px]"
+                                    >
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        api(`/api/calendar/trade/${n.id}/deny`, { method: 'POST' })
+                                          .then(() => refresh())
+                                          .catch(() => {});
+                                      }}
+                                      className="game-btn game-btn-red !py-1.5 !px-3 !text-[10px]"
+                                    >
+                                      Deny
+                                    </button>
+                                  </div>
+                                )}
+                                <p className="text-muted/60 text-xs mt-1">
+                                  {timeAgo(n.created_at)}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </button>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

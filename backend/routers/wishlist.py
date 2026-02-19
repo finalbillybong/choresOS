@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.database import get_db
 from backend.models import WishlistItem, Reward, User, UserRole
@@ -14,6 +15,7 @@ from backend.schemas import (
     RewardResponse,
 )
 from backend.dependencies import get_current_user, require_parent
+from backend.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api/wishlist", tags=["wishlist"])
 
@@ -25,7 +27,7 @@ async def list_wishlist(
     user: User = Depends(get_current_user),
 ):
     """Kids see their own wishlist items; parents/admins see all."""
-    stmt = select(WishlistItem)
+    stmt = select(WishlistItem).options(selectinload(WishlistItem.user))
 
     if user.role == UserRole.kid:
         stmt = stmt.where(WishlistItem.user_id == user.id)
@@ -34,7 +36,16 @@ async def list_wishlist(
 
     result = await db.execute(stmt)
     items = result.scalars().all()
-    return [WishlistResponse.model_validate(item) for item in items]
+    return [
+        WishlistResponse(
+            **{
+                c.key: getattr(item, c.key)
+                for c in WishlistItem.__table__.columns
+            },
+            user_display_name=item.user.display_name or item.user.username if item.user else None,
+        )
+        for item in items
+    ]
 
 
 # ---------- POST / ----------
@@ -55,6 +66,7 @@ async def add_wishlist_item(
     db.add(item)
     await db.commit()
     await db.refresh(item)
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "wishlist"}}, exclude_user=user.id)
     return WishlistResponse.model_validate(item)
 
 
@@ -87,6 +99,7 @@ async def update_wishlist_item(
     item.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(item)
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "wishlist"}}, exclude_user=user.id)
     return WishlistResponse.model_validate(item)
 
 
@@ -111,6 +124,7 @@ async def delete_wishlist_item(
 
     await db.delete(item)
     await db.commit()
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "wishlist"}}, exclude_user=user.id)
     return {"detail": "Wishlist item deleted"}
 
 
@@ -143,9 +157,13 @@ async def convert_to_reward(
     db.add(reward)
     await db.flush()
 
-    item.converted_to_reward_id = reward.id
-    item.updated_at = datetime.now(timezone.utc)
+    # Remove the wish now that it's been converted to a reward
+    kid_user_id = item.user_id
+    await db.delete(item)
 
     await db.commit()
     await db.refresh(reward)
+    # Notify the kid that their wish was converted, and broadcast wishlist change
+    await ws_manager.send_to_user(kid_user_id, {"type": "data_changed", "data": {"entity": "wishlist"}})
+    await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "reward"}}, exclude_user=parent.id)
     return RewardResponse.model_validate(reward)

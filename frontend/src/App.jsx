@@ -18,6 +18,7 @@ const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Inventory = lazy(() => import('./pages/Inventory'));
+const Events = lazy(() => import('./pages/Events'));
 
 function Loading() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/events" element={<Events />} />
           <Route path="/settings" element={<Settings />} />
           {user.role === 'admin' && <Route path="/admin" element={<AdminDashboard />} />}
           <Route path="*" element={<Navigate to="/" replace />} />

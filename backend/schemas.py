@@ -280,6 +280,7 @@ class WishlistUpdate(BaseModel):
 class WishlistResponse(BaseModel):
     id: int
     user_id: int
+    user_display_name: str | None = None
     title: str
     url: str | None
     image_url: str | None
