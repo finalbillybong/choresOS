@@ -110,10 +110,12 @@ async def _auto_generate_assignments(
             rotation = rot_result.scalar_one_or_none()
 
             if rotation:
+                cadence_val = rotation.cadence.value if hasattr(rotation.cadence, 'value') else str(rotation.cadence)
                 print(
                     f"[AUTOGEN] chore={chore.id} rotation kid_ids={rotation.kid_ids}"
-                    f" (types={[type(k).__name__ for k in rotation.kid_ids]})"
-                    f" cadence={rotation.cadence} idx={rotation.current_index}",
+                    f" cadence={cadence_val!r} (raw={rotation.cadence!r},"
+                    f" type={type(rotation.cadence).__name__})"
+                    f" idx={rotation.current_index}",
                     flush=True,
                 )
 
@@ -141,7 +143,8 @@ async def _auto_generate_assignments(
                     if rotation and rotation.kid_ids:
                         today_date = date.today()
                         days_offset = (day - today_date).days
-                        if rotation.cadence == RotationCadence.daily:
+                        cadence_str = rotation.cadence.value if hasattr(rotation.cadence, 'value') else str(rotation.cadence)
+                        if cadence_str == "daily":
                             idx = (rotation.current_index + days_offset) % len(rotation.kid_ids)
                         else:
                             # weekly/fortnightly/monthly: same kid for the period

@@ -513,29 +513,30 @@ async def assign_chore(
             db.add(existing_rotation)
             await db.flush()
 
-        # Remove stale pending assignments for this week that no longer
-        # match the new rotation pattern (prevents ghost entries from
-        # a previous rotation order/cadence).
-        week_start = today - timedelta(days=today.weekday())
-        week_end = week_start + timedelta(days=6)
+        # Remove ALL pending assignments from today onward that don't
+        # match the new rotation pattern.  This clears ghost entries
+        # left by a previous rotation order/cadence, including weeks
+        # the calendar auto-gen already populated.
         stale_result = await db.execute(
             select(ChoreAssignment).where(
                 ChoreAssignment.chore_id == chore_id,
-                ChoreAssignment.date >= week_start,
-                ChoreAssignment.date <= week_end,
+                ChoreAssignment.date >= today,
                 ChoreAssignment.status == AssignmentStatus.pending,
             )
         )
+        cadence_is_daily = body.rotation.cadence.value == "daily"
+        removed = 0
         for sa in stale_result.scalars().all():
             days_offset = (sa.date - today).days
-            if body.rotation.cadence == RotationCadence.daily:
+            if cadence_is_daily:
                 idx = (0 + days_offset) % len(kid_ids)
             else:
                 idx = 0
             expected_kid = int(kid_ids[idx])
             if int(sa.user_id) != expected_kid:
                 await db.delete(sa)
-                print(f"[ASSIGN] Removed stale assignment id={sa.id} kid={sa.user_id} date={sa.date}", flush=True)
+                removed += 1
+        print(f"[ASSIGN] Cleaned {removed} stale pending assignments from {today} onward", flush=True)
 
     elif existing_rotation:
         # Rotation disabled - remove existing rotation
