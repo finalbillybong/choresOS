@@ -48,6 +48,9 @@ export default function QuestAssignModal({
   const [error, setError] = useState('');
   const [existingRules, setExistingRules] = useState([]);
 
+  // Track whether any heroes were previously assigned (to show unassign warning)
+  const [hadExistingAssignments, setHadExistingAssignments] = useState(false);
+
   // Initialize kid configs
   useEffect(() => {
     if (!isOpen || !chore || !kids.length) return;
@@ -55,10 +58,13 @@ export default function QuestAssignModal({
     // Fetch existing rules for this chore
     api(`/api/chores/${chore.id}/rules`)
       .then((rules) => {
-        setExistingRules(Array.isArray(rules) ? rules : []);
+        const rulesList = Array.isArray(rules) ? rules : [];
+        setExistingRules(rulesList);
+        const hasActive = rulesList.some((r) => r.is_active);
+        setHadExistingAssignments(hasActive);
         const configs = {};
         for (const kid of kids) {
-          const existingRule = (Array.isArray(rules) ? rules : []).find(
+          const existingRule = rulesList.find(
             (r) => r.user_id === kid.id && r.is_active
           );
           configs[kid.id] = existingRule
@@ -89,6 +95,7 @@ export default function QuestAssignModal({
         }
         setKidConfigs(configs);
         setExistingRules([]);
+        setHadExistingAssignments(false);
       });
 
     setRotationEnabled(false);
@@ -98,6 +105,7 @@ export default function QuestAssignModal({
 
   const selectedKids = Object.entries(kidConfigs).filter(([, c]) => c.selected);
   const selectedCount = selectedKids.length;
+  const isUnassigningAll = hadExistingAssignments && selectedCount === 0;
 
   const toggleKid = (kidId) => {
     setKidConfigs((prev) => ({
@@ -128,12 +136,22 @@ export default function QuestAssignModal({
     });
   };
 
-  const handleSubmit = async () => {
-    if (selectedCount === 0) {
-      setError('Select at least one hero to assign this quest to.');
-      return;
-    }
+  // Toggle photo proof for all selected kids at once
+  const togglePhotoAll = () => {
+    const anyHasPhoto = selectedKids.some(([, c]) => c.requires_photo);
+    const newValue = !anyHasPhoto;
+    setKidConfigs((prev) => {
+      const next = { ...prev };
+      for (const [kidId, config] of Object.entries(next)) {
+        if (config.selected) {
+          next[kidId] = { ...config, requires_photo: newValue };
+        }
+      }
+      return next;
+    });
+  };
 
+  const handleSubmit = async () => {
     setSubmitting(true);
     setError('');
 
@@ -162,6 +180,9 @@ export default function QuestAssignModal({
 
   if (!chore) return null;
 
+  const allSelectedHavePhoto = selectedCount > 0 && selectedKids.every(([, c]) => c.requires_photo);
+  const someSelectedHavePhoto = selectedCount > 0 && selectedKids.some(([, c]) => c.requires_photo);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -170,10 +191,16 @@ export default function QuestAssignModal({
       actions={[
         { label: 'Cancel', onClick: onClose, className: 'game-btn game-btn-blue' },
         {
-          label: submitting ? 'Assigning...' : 'Assign Quest',
+          label: submitting
+            ? 'Saving...'
+            : isUnassigningAll
+            ? 'Unassign All'
+            : selectedCount === 0
+            ? 'Save'
+            : 'Assign Quest',
           onClick: handleSubmit,
-          className: 'game-btn game-btn-gold',
-          disabled: submitting || selectedCount === 0,
+          className: isUnassigningAll ? 'game-btn game-btn-red' : 'game-btn game-btn-gold',
+          disabled: submitting,
         },
       ]}
     >
@@ -237,6 +264,9 @@ export default function QuestAssignModal({
                         {kid.display_name || kid.username}
                       </span>
                     </div>
+                    {isSelected && config.requires_photo && (
+                      <Camera size={14} className="text-sky flex-shrink-0" />
+                    )}
                     {isSelected && (
                       <button
                         type="button"
@@ -302,7 +332,7 @@ export default function QuestAssignModal({
                         </div>
                       )}
 
-                      {/* Photo proof */}
+                      {/* Per-kid photo proof */}
                       <div className="flex items-center justify-between">
                         <label className="text-muted text-xs font-medium flex items-center gap-1.5">
                           <Camera size={12} />
@@ -339,6 +369,53 @@ export default function QuestAssignModal({
             })}
           </div>
         </div>
+
+        {/* Unassign warning */}
+        {isUnassigningAll && (
+          <div className="p-3 rounded-lg border border-crimson/30 bg-crimson/10 text-crimson text-sm">
+            No heroes selected. Saving will remove all assignments from this quest.
+          </div>
+        )}
+
+        {/* Photo proof toggle (applies to all selected kids) */}
+        {selectedCount > 0 && (
+          <div className="p-3 rounded-lg border border-border bg-surface-raised/20">
+            <div className="flex items-center justify-between">
+              <label className="text-cream text-sm font-medium flex items-center gap-2">
+                <Camera size={14} />
+                Require Photo Proof
+              </label>
+              <button
+                type="button"
+                onClick={togglePhotoAll}
+                className={`relative w-12 h-6 rounded-full border-2 transition-colors ${
+                  allSelectedHavePhoto
+                    ? 'bg-sky/20 border-sky'
+                    : someSelectedHavePhoto
+                    ? 'bg-sky/10 border-sky/50'
+                    : 'bg-navy-light border-border'
+                }`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
+                    allSelectedHavePhoto
+                      ? 'left-6 bg-sky'
+                      : someSelectedHavePhoto
+                      ? 'left-6 bg-sky/50'
+                      : 'left-0.5 bg-muted'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-muted text-xs mt-1">
+              {allSelectedHavePhoto
+                ? 'All heroes must attach a photo when completing this quest.'
+                : someSelectedHavePhoto
+                ? 'Some heroes require photo proof. Expand individual settings to adjust.'
+                : 'Heroes can complete this quest without attaching a photo.'}
+            </p>
+          </div>
+        )}
 
         {/* Rotation section */}
         {selectedCount >= 2 && (

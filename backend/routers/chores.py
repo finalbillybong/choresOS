@@ -177,7 +177,23 @@ async def list_chores(
             .distinct()
         )
         chores = result.scalars().all()
-        return [ChoreResponse.model_validate(c) for c in chores]
+
+        # Override requires_photo with per-kid assignment rule if one exists
+        enriched = []
+        for c in chores:
+            data = ChoreResponse.model_validate(c).model_dump()
+            rule_result = await db.execute(
+                select(ChoreAssignmentRule).where(
+                    ChoreAssignmentRule.chore_id == c.id,
+                    ChoreAssignmentRule.user_id == user.id,
+                    ChoreAssignmentRule.is_active == True,
+                )
+            )
+            rule = rule_result.scalar_one_or_none()
+            if rule is not None:
+                data["requires_photo"] = rule.requires_photo
+            enriched.append(data)
+        return enriched
 
 
 # ---------- POST / ----------
@@ -424,6 +440,19 @@ async def assign_chore(
         raise HTTPException(status_code=404, detail="Quest not found")
 
     today = date.today()
+    submitted_user_ids = {item.user_id for item in body.assignments}
+
+    # Deactivate rules for kids NOT in the submitted list
+    existing_rules_result = await db.execute(
+        select(ChoreAssignmentRule).where(
+            ChoreAssignmentRule.chore_id == chore_id,
+            ChoreAssignmentRule.is_active == True,
+        )
+    )
+    for existing_rule in existing_rules_result.scalars().all():
+        if existing_rule.user_id not in submitted_user_ids:
+            existing_rule.is_active = False
+
     created_rules = []
 
     for item in body.assignments:
@@ -523,7 +552,10 @@ async def assign_chore(
         exclude_user=user.id,
     )
 
-    return {"message": f"Quest assigned to {len(body.assignments)} hero(es)"}
+    count = len(body.assignments)
+    if count == 0:
+        return {"message": "All heroes unassigned from this quest"}
+    return {"message": f"Quest assigned to {count} hero(es)"}
 
 
 @router.put("/rules/{rule_id}", response_model=AssignmentRuleResponse)
@@ -610,6 +642,25 @@ async def complete_chore(
         )
 
     chore = assignment.chore
+
+    # Determine if photo is required: check per-kid rule first, then chore-level
+    requires_photo = chore.requires_photo
+    rule_result = await db.execute(
+        select(ChoreAssignmentRule).where(
+            ChoreAssignmentRule.chore_id == chore_id,
+            ChoreAssignmentRule.user_id == user.id,
+            ChoreAssignmentRule.is_active == True,
+        )
+    )
+    rule = rule_result.scalar_one_or_none()
+    if rule is not None:
+        requires_photo = rule.requires_photo
+
+    if requires_photo and (file is None or (hasattr(file, 'size') and file.size == 0)):
+        raise HTTPException(
+            status_code=400,
+            detail="Photo proof is required for this quest. Please attach a photo.",
+        )
 
     # Save photo proof if provided
     if file and file.size and file.size > 0:

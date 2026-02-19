@@ -231,6 +231,19 @@ async def get_weekly_calendar(
     )
     assignments = result.scalars().all()
 
+    # Pre-load active assignment rules for all chore+user combos in this week
+    # so we can efficiently resolve per-kid requires_photo
+    chore_user_pairs = {(a.chore_id, a.user_id) for a in assignments}
+    rule_map: dict[tuple[int, int], ChoreAssignmentRule] = {}
+    if chore_user_pairs:
+        rules_result = await db.execute(
+            select(ChoreAssignmentRule).where(
+                ChoreAssignmentRule.is_active == True,
+            )
+        )
+        for r in rules_result.scalars().all():
+            rule_map[(r.chore_id, r.user_id)] = r
+
     # Group by day — manually build dicts to avoid lazy-load issues
     grouped: dict[str, list] = {}
     for day_offset in range(7):
@@ -241,6 +254,11 @@ async def get_weekly_calendar(
         day_key = a.date.isoformat()
         if day_key not in grouped:
             continue
+
+        # Resolve requires_photo: per-kid rule overrides chore-level
+        kid_rule = rule_map.get((a.chore_id, a.user_id))
+        effective_requires_photo = kid_rule.requires_photo if kid_rule is not None else (a.chore.requires_photo if a.chore else False)
+
         entry = {
             "id": a.id,
             "chore_id": a.chore_id,
@@ -251,6 +269,7 @@ async def get_weekly_calendar(
             "verified_at": a.verified_at.isoformat() if a.verified_at else None,
             "verified_by": a.verified_by,
             "photo_proof_path": a.photo_proof_path,
+            "requires_photo": effective_requires_photo,
         }
         if a.chore:
             entry["chore"] = {
@@ -270,7 +289,7 @@ async def get_weekly_calendar(
                 } if a.chore.category else None,
                 "recurrence": a.chore.recurrence.value if a.chore.recurrence else None,
                 "custom_days": a.chore.custom_days,
-                "requires_photo": a.chore.requires_photo,  # legacy; frontend checks rule too
+                "requires_photo": effective_requires_photo,
                 "is_active": a.chore.is_active,
                 "created_by": a.chore.created_by,
                 "created_at": a.chore.created_at.isoformat() if a.chore.created_at else None,
