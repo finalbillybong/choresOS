@@ -268,6 +268,18 @@ async def update_chore(
                 )
                 db.add(assignment)
 
+        # Remove pending assignments for kids no longer in the list
+        stale = await db.execute(
+            select(ChoreAssignment).where(
+                ChoreAssignment.chore_id == chore_id,
+                ChoreAssignment.date == today,
+                ChoreAssignment.status == AssignmentStatus.pending,
+                ChoreAssignment.user_id.notin_(assigned_user_ids),
+            )
+        )
+        for old in stale.scalars().all():
+            await db.delete(old)
+
     await db.commit()
     await db.refresh(chore)
 
