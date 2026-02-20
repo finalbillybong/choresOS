@@ -26,6 +26,8 @@ _NOTIFICATION_URL_MAP = {
     "chore_completed": "/",
     "chore_verified": "/",
     "achievement_unlocked": "/profile",
+    "bonus_points": "/",
+    "streak_milestone": "/",
     "trade_proposed": "/calendar",
     "trade_accepted": "/calendar",
     "trade_denied": "/calendar",

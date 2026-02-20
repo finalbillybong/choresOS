@@ -1008,6 +1008,17 @@ async def verify_chore(
     if kid.current_streak > kid.longest_streak:
         kid.longest_streak = kid.current_streak
 
+    # Streak milestone notifications
+    _STREAK_MILESTONES = (7, 30, 100)
+    if kid.current_streak in _STREAK_MILESTONES:
+        db.add(Notification(
+            user_id=kid.id,
+            type=NotificationType.streak_milestone,
+            title=f"{kid.current_streak}-Day Streak!",
+            message=f"You've completed quests {kid.current_streak} days in a row! Keep it up!",
+            reference_type="streak",
+        ))
+
     await db.commit()
     await check_achievements(db, kid)
 

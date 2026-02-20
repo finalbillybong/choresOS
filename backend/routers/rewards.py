@@ -415,6 +415,24 @@ async def redeem_reward(
     )
     redemption = result.scalar_one()
 
+    # Notify parents that a kid redeemed a reward
+    parent_result = await db.execute(
+        select(User.id).where(
+            User.role.in_([UserRole.parent, UserRole.admin]),
+            User.is_active == True,
+        )
+    )
+    for (pid,) in parent_result.all():
+        db.add(Notification(
+            user_id=pid,
+            type=NotificationType.reward_approved,
+            title="Reward Redeemed!",
+            message=f"{current_user.display_name} redeemed '{reward.title}' for {reward.point_cost} XP",
+            reference_type="redemption",
+            reference_id=redemption.id,
+        ))
+    await db.commit()
+
     # Check achievements after redemption
     await check_achievements(db, current_user)
 
