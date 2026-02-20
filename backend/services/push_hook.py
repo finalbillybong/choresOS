@@ -71,7 +71,7 @@ async def _send_push_safe(user_id: int, title: str, body: str, tag: str):
         async with async_session() as db:
             await send_push_to_user(db, user_id, title, body, url="/", tag=tag)
     except Exception:
-        logger.debug("Push notification failed for user %s", user_id, exc_info=True)
+        logger.warning("Push notification failed for user %s", user_id, exc_info=True)
 
 
 def install_push_hooks():

@@ -109,6 +109,7 @@ def _send_one(subscription_info: dict, payload: str, vapid_private: str, vapid_c
             data=payload,
             vapid_private_key=vapid_private,
             vapid_claims=vapid_claims,
+            ttl=86400,
         )
         return True
     except _WebPushException as e:
