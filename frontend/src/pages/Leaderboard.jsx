@@ -86,12 +86,12 @@ export default function Leaderboard() {
             return (
               <div
                 key={entry.user_id || entry.id || idx}
-                className={`game-panel p-4 flex items-center gap-4 ${
+                className={`game-panel p-4 flex items-center gap-3 ${
                   isCurrentUser ? '!border-sky' : ''
                 }`}
               >
                 {/* Medal / Rank */}
-                <div className="flex-shrink-0 w-12 text-center">
+                <div className="flex-shrink-0 w-8 sm:w-12 text-center">
                   <span className="text-2xl">{MEDALS[idx]}</span>
                 </div>
 
@@ -111,7 +111,7 @@ export default function Leaderboard() {
                   </p>
 
                   {/* Stats row */}
-                  <div className="flex items-center gap-3 mb-2 text-xs">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 text-xs flex-wrap">
                     <span className="flex items-center gap-1 text-muted">
                       <Swords size={12} className="text-sky" />
                       {questsDone} quest{questsDone !== 1 ? 's' : ''}

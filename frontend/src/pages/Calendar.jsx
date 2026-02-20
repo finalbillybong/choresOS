@@ -236,29 +236,31 @@ export default function Calendar() {
         </div>
 
         {/* Week navigation */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={prevWeek}
-            className="p-2 rounded hover:bg-surface-raised transition-colors text-muted hover:text-cream"
-            aria-label="Previous week"
-          >
-            <ChevronLeft size={20} />
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={prevWeek}
+              className="p-2 rounded hover:bg-surface-raised transition-colors text-muted hover:text-cream"
+              aria-label="Previous week"
+            >
+              <ChevronLeft size={20} />
+            </button>
 
-          <span className="text-cream text-sm min-w-[180px] text-center">
-            {formatShortDate(startDate)} &ndash; {formatShortDate(endDate)}
-          </span>
+            <span className="text-cream text-sm min-w-[140px] sm:min-w-[180px] text-center">
+              {formatShortDate(startDate)} &ndash; {formatShortDate(endDate)}
+            </span>
 
-          <button
-            onClick={nextWeek}
-            className="p-2 rounded hover:bg-surface-raised transition-colors text-muted hover:text-cream"
-            aria-label="Next 7 days"
-          >
-            <ChevronRight size={20} />
-          </button>
+            <button
+              onClick={nextWeek}
+              className="p-2 rounded hover:bg-surface-raised transition-colors text-muted hover:text-cream"
+              aria-label="Next 7 days"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
 
           {!isAtToday && (
-            <button onClick={goToday} className="game-btn game-btn-blue ml-2">
+            <button onClick={goToday} className="game-btn game-btn-blue">
               Today
             </button>
           )}
@@ -267,7 +269,7 @@ export default function Calendar() {
             <button
               onClick={cleanupStale}
               disabled={cleaning}
-              className="game-btn game-btn-red ml-2 flex items-center gap-1"
+              className="game-btn game-btn-red flex items-center gap-1"
               title="Remove all overdue pending quests and reset exclusions"
             >
               {cleaning ? (
