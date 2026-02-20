@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
-from backend.models import SeasonalEvent
+from backend.models import SeasonalEvent, User, UserRole, Notification, NotificationType
 from backend.schemas import EventCreate, EventUpdate, EventResponse
 from backend.dependencies import get_current_user, require_parent
 from backend.websocket_manager import ws_manager
@@ -60,6 +60,23 @@ async def create_event(
         created_by=parent.id,
     )
     db.add(event)
+    await db.flush()
+
+    # Notify all kids about the new event
+    kid_result = await db.execute(
+        select(User.id).where(User.role == UserRole.kid, User.is_active == True)
+    )
+    for (kid_id,) in kid_result.all():
+        multiplier_pct = int((event.multiplier - 1) * 100)
+        db.add(Notification(
+            user_id=kid_id,
+            type=NotificationType.bonus_points,
+            title="Bonus Event Started!",
+            message=f"'{event.title}' is live — earn {multiplier_pct}% bonus XP on all quests!",
+            reference_type="event",
+            reference_id=event.id,
+        ))
+
     await db.commit()
     await db.refresh(event)
     await ws_manager.broadcast({"type": "data_changed", "data": {"entity": "event"}}, exclude_user=parent.id)
