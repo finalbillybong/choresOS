@@ -13,6 +13,7 @@ import {
   ChevronUp,
   RotateCw,
   Loader2,
+  CalendarDays,
 } from 'lucide-react';
 
 const RECURRENCE_OPTIONS = [
@@ -49,6 +50,7 @@ export default function QuestAssignModal({
   const [rotationEnabled, setRotationEnabled] = useState(false);
   const [rotationCadence, setRotationCadence] = useState('weekly');
   const [rotationFirstKid, setRotationFirstKid] = useState(null);
+  const [rotationDays, setRotationDays] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [existingRules, setExistingRules] = useState([]);
@@ -109,7 +111,6 @@ export default function QuestAssignModal({
         if (rot && rot.kid_ids && rot.kid_ids.length >= 2) {
           setRotationEnabled(true);
           setRotationCadence(rot.cadence || 'weekly');
-          // Restore who currently starts the rotation
           const currentIdx = rot.current_index ?? 0;
           setRotationFirstKid(rot.kid_ids[currentIdx] ?? rot.kid_ids[0]);
         } else {
@@ -123,6 +124,17 @@ export default function QuestAssignModal({
         setRotationCadence('weekly');
         setRotationFirstKid(null);
       });
+
+    // Restore rotation days from existing rules (if any use custom recurrence)
+    api(`/api/chores/${chore.id}/rules`)
+      .then((rules) => {
+        const rulesList = Array.isArray(rules) ? rules : [];
+        const customRule = rulesList.find(
+          (r) => r.is_active && r.recurrence === 'custom' && r.custom_days?.length
+        );
+        setRotationDays(customRule ? customRule.custom_days : []);
+      })
+      .catch(() => setRotationDays([]));
 
     setError('');
   }, [isOpen, chore, kids]);
@@ -140,26 +152,41 @@ export default function QuestAssignModal({
     }
   }, [rotationEnabled, selectedCount, kidConfigs]);
 
-  // Keep per-kid recurrence in sync with rotation cadence
+  // Keep per-kid recurrence in sync with rotation settings
   useEffect(() => {
     if (!rotationEnabled || selectedCount < 2) return;
-    const cadenceToRecurrence = {
-      daily: 'daily',
-      weekly: 'weekly',
-      fortnightly: 'fortnightly',
-      monthly: 'weekly',
-    };
-    const recurrence = cadenceToRecurrence[rotationCadence] || 'daily';
-    setKidConfigs((prev) => {
-      const next = { ...prev };
-      for (const [kidId, config] of Object.entries(next)) {
-        if (config.selected && config.recurrence !== recurrence) {
-          next[kidId] = { ...config, recurrence };
+
+    if (rotationDays.length > 0) {
+      // Specific days selected — use custom recurrence with those days
+      setKidConfigs((prev) => {
+        const next = { ...prev };
+        for (const [kidId, config] of Object.entries(next)) {
+          if (config.selected && (config.recurrence !== 'custom' || JSON.stringify(config.custom_days) !== JSON.stringify(rotationDays))) {
+            next[kidId] = { ...config, recurrence: 'custom', custom_days: [...rotationDays] };
+          }
         }
-      }
-      return next;
-    });
-  }, [rotationEnabled, rotationCadence, selectedCount]);
+        return next;
+      });
+    } else {
+      // No specific days — fall back to cadence mapping
+      const cadenceToRecurrence = {
+        daily: 'daily',
+        weekly: 'weekly',
+        fortnightly: 'fortnightly',
+        monthly: 'weekly',
+      };
+      const recurrence = cadenceToRecurrence[rotationCadence] || 'daily';
+      setKidConfigs((prev) => {
+        const next = { ...prev };
+        for (const [kidId, config] of Object.entries(next)) {
+          if (config.selected && config.recurrence !== recurrence) {
+            next[kidId] = { ...config, recurrence };
+          }
+        }
+        return next;
+      });
+    }
+  }, [rotationEnabled, rotationCadence, rotationDays, selectedCount]);
 
   const toggleKid = (kidId) => {
     setKidConfigs((prev) => ({
@@ -218,17 +245,23 @@ export default function QuestAssignModal({
 
     const body = { assignments };
     if (rotationEnabled && selectedCount >= 2) {
-      // Sync per-kid recurrence with the rotation cadence so the quest
-      // frequency matches what the user chose (e.g. weekly cadence →
-      // quest appears once per week, not daily).
-      const cadenceToRecurrence = {
-        daily: 'daily',
-        weekly: 'weekly',
-        fortnightly: 'weekly',
-        monthly: 'weekly',
-      };
-      const recurrence = cadenceToRecurrence[rotationCadence] || 'daily';
-      assignments.forEach((a) => { a.recurrence = recurrence; });
+      if (rotationDays.length > 0) {
+        // Specific days selected — use custom recurrence
+        assignments.forEach((a) => {
+          a.recurrence = 'custom';
+          a.custom_days = [...rotationDays];
+        });
+      } else {
+        // No specific days — map cadence to recurrence
+        const cadenceToRecurrence = {
+          daily: 'daily',
+          weekly: 'weekly',
+          fortnightly: 'fortnightly',
+          monthly: 'weekly',
+        };
+        const recurrence = cadenceToRecurrence[rotationCadence] || 'daily';
+        assignments.forEach((a) => { a.recurrence = recurrence; });
+      }
 
       // Reorder so the chosen first kid is at index 0 (backend uses kid_ids[0])
       if (rotationFirstKid != null) {
@@ -538,6 +571,40 @@ export default function QuestAssignModal({
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-muted text-xs font-medium mb-1">
+                    <CalendarDays size={12} />
+                    Quest Days
+                    <span className="text-muted/60">(optional)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DAY_NAMES.map((day, idx) => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() =>
+                          setRotationDays((prev) =>
+                            prev.includes(idx)
+                              ? prev.filter((d) => d !== idx)
+                              : [...prev, idx]
+                          )
+                        }
+                        className={`px-2 py-1 rounded border text-xs transition-colors ${
+                          rotationDays.includes(idx)
+                            ? 'border-purple bg-purple/20 text-purple'
+                            : 'border-border text-muted hover:border-cream/30'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-muted text-xs mt-1">
+                    {rotationDays.length > 0
+                      ? `Quest appears on ${rotationDays.map((d) => DAY_NAMES[d]).join(', ')} only.`
+                      : 'No days selected — quest appears every day matching the cadence.'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-muted text-xs font-medium mb-1">
