@@ -686,14 +686,14 @@ export default function AdminDashboard() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg border transition-colors text-[11px] font-medium ${
+              className={`flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg border transition-colors text-[10px] sm:text-[11px] font-medium overflow-hidden ${
                 isActive
                   ? 'bg-sky/10 border-sky/30 text-sky'
                   : 'border-border text-muted hover:text-cream hover:border-border-light'
               }`}
             >
               <Icon size={16} />
-              <span className="truncate w-full text-center">{tab.label}</span>
+              <span className="truncate w-full text-center leading-tight">{tab.label}</span>
             </button>
           );
         })}

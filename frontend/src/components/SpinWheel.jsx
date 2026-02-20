@@ -117,13 +117,11 @@ export default function SpinWheel({ availability, onSpinComplete }) {
             duration: 3.5,
             ease: [0.2, 0.8, 0.3, 1],
           }}
-          className="w-[300px] h-[300px]"
+          className="w-[260px] h-[260px] sm:w-[300px] sm:h-[300px]"
         >
           <svg
-            width="300"
-            height="300"
             viewBox="0 0 300 300"
-            className="drop-shadow-xl"
+            className="w-full h-full drop-shadow-xl"
           >
             {/* Outer ring */}
             <circle
