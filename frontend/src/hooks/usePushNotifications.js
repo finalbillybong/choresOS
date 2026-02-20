@@ -18,11 +18,19 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState('default');
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
-  // 'full' | 'needs-install' | 'unsupported'
+  // 'full' | 'needs-install' | 'needs-https' | 'unsupported'
   const [supportLevel, setSupportLevel] = useState('unsupported');
 
   // Check browser support
   useEffect(() => {
+    // Push notifications require a secure context (HTTPS or localhost)
+    const isSecure = window.isSecureContext;
+    if (!isSecure) {
+      setSupportLevel('needs-https');
+      setLoading(false);
+      return;
+    }
+
     const hasSW = 'serviceWorker' in navigator;
     const hasPush = 'PushManager' in window;
     const hasNotif = 'Notification' in window;

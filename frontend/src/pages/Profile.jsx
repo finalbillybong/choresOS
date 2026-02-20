@@ -32,9 +32,6 @@ function PushNotificationToggle() {
   const { supported, supportLevel, permission, subscribed, loading, toggle } = usePushNotifications();
   const [toggling, setToggling] = useState(false);
 
-  // Hide only on truly unsupported browsers (no service worker at all)
-  if (supportLevel === 'unsupported') return null;
-
   const handleToggle = async () => {
     setToggling(true);
     await toggle();
@@ -43,6 +40,8 @@ function PushNotificationToggle() {
 
   const denied = permission === 'denied';
   const needsInstall = supportLevel === 'needs-install';
+  const needsHttps = supportLevel === 'needs-https';
+  const unsupported = supportLevel === 'unsupported';
 
   return (
     <div className="game-panel p-5">
@@ -50,7 +49,19 @@ function PushNotificationToggle() {
         {subscribed ? <Bell size={16} className="text-sky" /> : <BellOff size={16} className="text-muted" />}
         Push Notifications
       </h2>
-      {needsInstall ? (
+      {needsHttps ? (
+        <div>
+          <p className="text-cream/80 text-sm">
+            Get notified about quests, rewards & achievements
+          </p>
+          <p className="text-amber/80 text-xs mt-2">
+            Push notifications require a secure (HTTPS) connection.
+          </p>
+          <p className="text-muted text-xs mt-1">
+            Set up a reverse proxy with SSL (e.g. Nginx Proxy Manager) or access ChoreQuest via HTTPS to enable push notifications.
+          </p>
+        </div>
+      ) : needsInstall ? (
         <div>
           <p className="text-cream/80 text-sm">
             Get notified about quests, rewards & achievements
@@ -63,6 +74,15 @@ function PushNotificationToggle() {
             <li>Scroll down and tap <strong className="text-cream/70">Add to Home Screen</strong></li>
             <li>Open ChoreQuest from your Home Screen</li>
           </ol>
+        </div>
+      ) : unsupported ? (
+        <div>
+          <p className="text-cream/80 text-sm">
+            Get notified about quests, rewards & achievements
+          </p>
+          <p className="text-muted text-xs mt-2">
+            Your browser does not support push notifications. Try using Chrome, Edge, Firefox, or Safari 16.4+.
+          </p>
         </div>
       ) : (
         <div className="flex items-center justify-between">
