@@ -7,6 +7,9 @@ starts even if these packages are not installed.
 import base64
 import json
 import logging
+import tempfile
+import os
+from urllib.parse import urlparse
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,21 +45,20 @@ def _ensure_pywebpush():
 def _generate_vapid_keys() -> tuple[str, str]:
     """Generate a new VAPID EC P-256 key pair.
 
-    Returns (private_key_b64url, public_key_b64url).
-    The private key is DER-encoded (PKCS8) then base64url-encoded without
-    padding — exactly what pywebpush's Vapid.from_string → from_der expects.
+    Returns (private_key_pem, public_key_urlsafe_b64).
+    The private key is stored as PEM for maximum compatibility.
+    The public key is an uncompressed EC point, base64url-encoded.
     """
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives import serialization
 
     private_key = ec.generate_private_key(ec.SECP256R1())
 
-    private_der = private_key.private_bytes(
-        encoding=serialization.Encoding.DER,
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
-    )
-    private_b64 = base64.urlsafe_b64encode(private_der).rstrip(b"=").decode()
+    ).decode()
 
     public_bytes = private_key.public_key().public_bytes(
         encoding=serialization.Encoding.X962,
@@ -64,47 +66,44 @@ def _generate_vapid_keys() -> tuple[str, str]:
     )
     public_b64 = base64.urlsafe_b64encode(public_bytes).rstrip(b"=").decode()
 
-    return private_b64, public_b64
+    return private_pem, public_b64
 
 
-def _normalize_private_key(key: str) -> str:
-    """Ensure a VAPID private key is in base64url-encoded DER format.
+def _load_private_key(key_str: str):
+    """Load an EC private key from any stored format (PEM, DER b64url, raw b64url).
 
-    Handles PEM keys (from older stored values) and raw 32-byte keys
-    by converting them to DER PKCS8 base64url, which is what pywebpush
-    expects via Vapid.from_string → from_der.
+    Returns a cryptography EllipticCurvePrivateKey.
     """
-    if not key.startswith("-----"):
-        # Could be raw (32 bytes decoded) or already DER — check length
-        raw = base64.urlsafe_b64decode(key + "==")
-        if len(raw) == 32:
-            # Raw 32-byte scalar — convert to DER so from_der can parse it
-            from cryptography.hazmat.primitives.asymmetric import ec
-            from cryptography.hazmat.primitives import serialization
-            priv = ec.derive_private_key(
-                int.from_bytes(raw, "big"), ec.SECP256R1()
-            )
-            der = priv.private_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-            return base64.urlsafe_b64encode(der).rstrip(b"=").decode()
-        return key  # already DER base64url
-
-    # PEM → load and re-encode as DER base64url
     from cryptography.hazmat.primitives import serialization
-    priv = serialization.load_pem_private_key(key.encode(), password=None)
-    der = priv.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    if key_str.startswith("-----"):
+        return serialization.load_pem_private_key(key_str.encode(), password=None)
+
+    raw = base64.urlsafe_b64decode(key_str + "==")
+    if len(raw) == 32:
+        return ec.derive_private_key(int.from_bytes(raw, "big"), ec.SECP256R1())
+
+    return serialization.load_der_private_key(raw, password=None)
+
+
+def _public_key_b64(private_key) -> str:
+    """Derive the public key from a private key and return as base64url."""
+    from cryptography.hazmat.primitives import serialization
+
+    pub_bytes = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=serialization.PublicFormat.UncompressedPoint,
     )
-    return base64.urlsafe_b64encode(der).rstrip(b"=").decode()
+    return base64.urlsafe_b64encode(pub_bytes).rstrip(b"=").decode()
 
 
 async def get_vapid_keys(db: AsyncSession) -> tuple[str, str]:
-    """Return (private_key, public_b64) — from env, DB, or freshly generated."""
+    """Return (private_key, public_b64) — from env, DB, or freshly generated.
+
+    Also verifies that the private key matches the stored public key.
+    If they don't match, the keys are regenerated.
+    """
     if settings.VAPID_PRIVATE_KEY and settings.VAPID_PUBLIC_KEY:
         return settings.VAPID_PRIVATE_KEY, settings.VAPID_PUBLIC_KEY
 
@@ -113,7 +112,23 @@ async def get_vapid_keys(db: AsyncSession) -> tuple[str, str]:
     )
     stored = {row.key: row.value for row in result.scalars().all()}
     if "vapid_private_key" in stored and "vapid_public_key" in stored:
-        return stored["vapid_private_key"], stored["vapid_public_key"]
+        # Verify key pair actually matches
+        try:
+            priv = _load_private_key(stored["vapid_private_key"])
+            derived_pub = _public_key_b64(priv)
+            if derived_pub == stored["vapid_public_key"]:
+                return stored["vapid_private_key"], stored["vapid_public_key"]
+            logger.warning(
+                "VAPID key pair mismatch — stored public key does not match "
+                "private key. Regenerating."
+            )
+        except Exception:
+            logger.warning("VAPID private key unreadable. Regenerating.")
+        # Delete stale keys so we regenerate below
+        await db.execute(
+            delete(AppSetting).where(AppSetting.key.in_(["vapid_private_key", "vapid_public_key"]))
+        )
+        await db.flush()
 
     try:
         priv, pub = _generate_vapid_keys()
@@ -145,18 +160,45 @@ def _send_one(subscription_info: dict, payload: str, vapid_private: str, vapid_c
     """
     if not _ensure_pywebpush():
         return "error"
+
+    # Write PEM key to a temp file so pywebpush uses the reliable
+    # Vapid.from_file → from_pem code path (avoids from_string quirks).
+    pem_key = vapid_private
+    if not pem_key.startswith("-----"):
+        # Convert non-PEM format to PEM for the temp file
+        from cryptography.hazmat.primitives import serialization
+        priv = _load_private_key(vapid_private)
+        pem_key = priv.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode()
+
+    fd, key_path = tempfile.mkstemp(suffix=".pem")
     try:
+        with os.fdopen(fd, "w") as f:
+            f.write(pem_key)
+
+        endpoint = subscription_info.get("endpoint", "")
+        aud = ""
+        try:
+            url = urlparse(endpoint)
+            aud = f"{url.scheme}://{url.netloc}"
+        except Exception:
+            pass
+        logger.info("Push attempt: aud=%s endpoint=%s...", aud, endpoint[:80])
+
         _webpush(
             subscription_info=subscription_info,
             data=payload,
-            vapid_private_key=_normalize_private_key(vapid_private),
-            vapid_claims=vapid_claims,
+            vapid_private_key=key_path,
+            vapid_claims=dict(vapid_claims),  # copy — pywebpush mutates it
             ttl=86400,
         )
         return "ok"
     except _WebPushException as e:
-        status = getattr(e, "response", None)
-        status_code = status.status_code if status else None
+        resp = getattr(e, "response", None)
+        status_code = getattr(resp, "status_code", None)
         if status_code in (404, 410):
             return "gone"
         logger.warning("Push failed (status=%s): %s", status_code, e)
@@ -164,6 +206,11 @@ def _send_one(subscription_info: dict, payload: str, vapid_private: str, vapid_c
     except Exception:
         logger.exception("Unexpected push error")
         return "error"
+    finally:
+        try:
+            os.unlink(key_path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -193,11 +240,11 @@ async def send_push_to_user(
     if not subs:
         return 0
 
-    vapid_private, _ = await get_vapid_keys(db)
+    vapid_private, vapid_public = await get_vapid_keys(db)
     if not vapid_private:
         return 0
 
-    vapid_claims = {"sub": settings.VAPID_CLAIM_EMAIL}
+    logger.info("Sending push: pub_key=%s...", vapid_public[:20])
 
     payload = json.dumps({
         "title": title,
@@ -217,6 +264,7 @@ async def send_push_to_user(
                 "auth": sub.auth,
             },
         }
+        vapid_claims = {"sub": settings.VAPID_CLAIM_EMAIL}
         result = _send_one(subscription_info, payload, vapid_private, vapid_claims)
         if result == "ok":
             sent += 1
