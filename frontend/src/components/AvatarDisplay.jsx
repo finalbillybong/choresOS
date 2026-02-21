@@ -791,12 +791,12 @@ function renderAccessory(style, color) {
   }
 }
 
-/* ── Pets (bottom-right) ── */
+/* ── Pets (right shoulder) ── */
 function renderPet(style, color) {
   switch (style) {
     case 'cat':
       return (
-        <g transform="translate(24,26)">
+        <g transform="translate(23,17)">
           <ellipse cx="3" cy="3" rx="2.5" ry="2" fill={color} />
           <polygon points="1,1 1.5,-1 3,1" fill={color} />
           <polygon points="4,1 4.5,-1 5,1" fill={color} />
@@ -807,7 +807,7 @@ function renderPet(style, color) {
       );
     case 'dog':
       return (
-        <g transform="translate(24,26)">
+        <g transform="translate(23,17)">
           <ellipse cx="3" cy="3" rx="2.5" ry="2" fill={color} />
           <ellipse cx="0.5" cy="1.5" rx="1.2" ry="1.8" fill={color} />
           <ellipse cx="5.5" cy="1.5" rx="1.2" ry="1.8" fill={color} />
@@ -818,7 +818,7 @@ function renderPet(style, color) {
       );
     case 'dragon':
       return (
-        <g transform="translate(23,24)">
+        <g transform="translate(21,15)">
           <ellipse cx="4" cy="4" rx="3" ry="2.5" fill={color} />
           <polygon points="2,2 1,0 3,2" fill={color} />
           <polygon points="5,2 6,0 7,2" fill={color} />
@@ -831,7 +831,7 @@ function renderPet(style, color) {
       );
     case 'owl':
       return (
-        <g transform="translate(24,25)">
+        <g transform="translate(23,15)">
           <ellipse cx="3" cy="3.5" rx="2.5" ry="3" fill={color} />
           <polygon points="1.5,1 3,0 4.5,1" fill={color} />
           <circle cx="2" cy="3" r="1" fill="white" />
@@ -843,7 +843,7 @@ function renderPet(style, color) {
       );
     case 'bunny':
       return (
-        <g transform="translate(24,26)">
+        <g transform="translate(23,16)">
           <ellipse cx="3" cy="3" rx="2.5" ry="2" fill={color} />
           <ellipse cx="2" cy="0" rx="0.8" ry="2.5" fill={color} />
           <ellipse cx="2" cy="0" rx="0.4" ry="2" fill="#ffb6c1" opacity="0.4" />
@@ -856,7 +856,7 @@ function renderPet(style, color) {
       );
     case 'phoenix':
       return (
-        <g transform="translate(23,24)">
+        <g transform="translate(21,15)">
           <ellipse cx="4" cy="4" rx="2.5" ry="2" fill={color} />
           <polygon points="2,3 0,1 3,3" fill="#f39c12" />
           <polygon points="5,2 6,0 7,3" fill="#f39c12" />
