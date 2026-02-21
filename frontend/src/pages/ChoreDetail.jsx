@@ -100,7 +100,7 @@ export default function ChoreDetail() {
   // Rotation state (parent only)
   const [rotation, setRotation] = useState(null);
   const [allKids, setAllKids] = useState([]);
-  const [selectedCadence, setSelectedCadence] = useState('weekly');
+  const [selectedCadence, setSelectedCadence] = useState('daily');
   const [assignmentRules, setAssignmentRules] = useState([]);
 
   const fetchRotation = useCallback(async () => {

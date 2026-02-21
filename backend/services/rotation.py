@@ -1,6 +1,6 @@
 """Shared rotation logic for chore rotation scheduling."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from backend.models import ChoreRotation, RotationCadence
 
@@ -36,22 +36,53 @@ def get_rotation_kid_for_day(
     rotation: ChoreRotation,
     target_day: date,
     reference_day: date,
+    active_weekdays: list[int] | None = None,
 ) -> int:
     """Return the kid ID that should be assigned on ``target_day``
     given the rotation's current state.
 
-    For daily cadence, the kid rotates each day relative to ``reference_day``.
+    For daily cadence, the kid rotates each *occurrence* relative to
+    ``reference_day``.  When *active_weekdays* is supplied (e.g. from a
+    custom-days schedule), only those weekdays count as occurrences;
+    otherwise every calendar day counts.
+
     For all other cadences, the same kid is used for the entire period.
     """
     cadence = _cadence_value(rotation.cadence)
-    days_offset = (target_day - reference_day).days
 
     if cadence == "daily":
-        idx = (rotation.current_index + days_offset) % len(rotation.kid_ids)
+        if active_weekdays is not None:
+            offset = _count_occurrences(reference_day, target_day, active_weekdays)
+        else:
+            offset = (target_day - reference_day).days
+        idx = (rotation.current_index + offset) % len(rotation.kid_ids)
     else:
         idx = rotation.current_index
 
     return int(rotation.kid_ids[idx])
+
+
+def _count_occurrences(start: date, end: date, weekdays: list[int]) -> int:
+    """Count how many *weekday* occurrences fall in the range (start, end].
+
+    Returns a negative number when *end* < *start*.
+    """
+    if start == end or not weekdays:
+        return 0
+
+    forward = end >= start
+    a, b = (start, end) if forward else (end, start)
+
+    total_days = (b - a).days
+    full_weeks, remaining = divmod(total_days, 7)
+
+    wd_set = set(weekdays)
+    count = full_weeks * len(wd_set)
+    for i in range(1, remaining + 1):
+        if (a + timedelta(days=i)).weekday() in wd_set:
+            count += 1
+
+    return count if forward else -count
 
 
 def _cadence_value(cadence: RotationCadence | str) -> str:

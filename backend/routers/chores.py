@@ -548,6 +548,19 @@ async def assign_chore(
             db.add(existing_rotation)
             await db.flush()
 
+        # Compute active weekdays for occurrence-based rotation projection
+        _active_wd: set[int] = set()
+        _has_daily = False
+        for _item in body.assignments:
+            if _item.recurrence == Recurrence.daily:
+                _has_daily = True
+                break
+            if _item.recurrence == Recurrence.custom and _item.custom_days:
+                _active_wd.update(_item.custom_days)
+            elif _item.recurrence in (Recurrence.weekly, Recurrence.fortnightly):
+                _active_wd.add(chore.created_at.weekday())
+        active_weekdays = sorted(_active_wd) if _active_wd and not _has_daily else None
+
         # Clean stale pending assignments that don't match the new rotation
         stale_result = await db.execute(
             select(ChoreAssignment).where(
@@ -558,7 +571,9 @@ async def assign_chore(
         )
         removed = 0
         for sa in stale_result.scalars().all():
-            expected_kid = get_rotation_kid_for_day(existing_rotation, sa.date, today)
+            expected_kid = get_rotation_kid_for_day(
+                existing_rotation, sa.date, today, active_weekdays,
+            )
             if int(sa.user_id) != expected_kid:
                 await db.delete(sa)
                 removed += 1
