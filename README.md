@@ -29,12 +29,12 @@
 ## 📁 Project Structure
 
 src/
-├── components/        # Reusable UI components (Buttons, Modals, Cards)
-├── context/           # Context providers for global state (Points, Chores)
-├── pages/             # Main views (Dashboard, Chore List, Rewards Shop)
-├── assets/            # Static images and icons
-├── styles/            # CSS and Bootstrap overrides
-└── App.js             # Main routing and application logic
+<br>├── components/ &nbsp;&nbsp;&nbsp;&nbsp; # Reusable UI components
+<br>├── context/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Context providers for state
+<br>├── pages/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Main views (Dashboard, Chores)
+<br>├── assets/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Static images and icons
+<br>├── styles/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # CSS and Bootstrap overrides
+<br>└── App.js &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Main routing and logic
 
 ---
 
