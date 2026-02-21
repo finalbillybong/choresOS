@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import Modal from '../components/Modal';
 import Inventory from './Inventory';
 import Wishlist from './Wishlist';
+import AvatarShop from './AvatarShop';
 import {
   ShoppingBag,
   Plus,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Gift,
   Star,
+  Palette,
 } from 'lucide-react';
 
 const emptyForm = {
@@ -27,6 +29,7 @@ const emptyForm = {
 
 const TABS = [
   { key: 'shop', label: 'Shop', icon: ShoppingBag },
+  { key: 'avatar', label: 'Avatar', icon: Palette },
   { key: 'inventory', label: 'Inventory', icon: Package },
   { key: 'wishlist', label: 'Wishlist', icon: Star },
 ];
@@ -82,6 +85,14 @@ export default function Rewards() {
   }, [fetchRewards]);
 
   // Render sub-pages (after all hooks)
+  if (activeTab === 'avatar') {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <TabBar activeTab={activeTab} setTab={setTab} />
+        <AvatarShop />
+      </div>
+    );
+  }
   if (activeTab === 'inventory') {
     return (
       <div className="max-w-5xl mx-auto space-y-6">

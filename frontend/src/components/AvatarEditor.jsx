@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
-import { Save, Loader2, ChevronDown } from 'lucide-react';
+import { Save, Loader2, ChevronDown, Lock } from 'lucide-react';
 
 const HEAD_OPTIONS = [
   { id: 'round', label: 'Round' },
@@ -242,33 +242,41 @@ function ColorSwatch({ colors, selected, onSelect }) {
   );
 }
 
-function ShapeSelector({ options, selected, onSelect }) {
+function ShapeSelector({ options, selected, onSelect, lockedItems }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          onClick={() => onSelect(opt.id)}
-          className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-            selected === opt.id
-              ? 'border-sky bg-sky/10 text-sky'
-              : 'border-border text-muted hover:border-border-light hover:text-cream'
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const isLocked = lockedItems && lockedItems.has(opt.id);
+        return (
+          <button
+            key={opt.id}
+            onClick={() => !isLocked && onSelect(opt.id)}
+            disabled={isLocked}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1 ${
+              isLocked
+                ? 'border-border/50 text-muted/40 cursor-not-allowed'
+                : selected === opt.id
+                ? 'border-sky bg-sky/10 text-sky'
+                : 'border-border text-muted hover:border-border-light hover:text-cream'
+            }`}
+          >
+            {isLocked && <Lock size={10} />}
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function CategoryContent({ category, config, set }) {
+function CategoryContent({ category, config, set, lockedByCategory }) {
+  const locked = lockedByCategory[category] || new Set();
   switch (category) {
     case 'head':
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Shape</p>
-          <ShapeSelector options={HEAD_OPTIONS} selected={config.head} onSelect={(v) => set('head', v)} />
+          <ShapeSelector options={HEAD_OPTIONS} selected={config.head} onSelect={(v) => set('head', v)} lockedItems={locked} />
         </div>
       );
     case 'skin':
@@ -282,7 +290,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={HAIR_OPTIONS} selected={config.hair} onSelect={(v) => set('hair', v)} />
+          <ShapeSelector options={HAIR_OPTIONS} selected={config.hair} onSelect={(v) => set('hair', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={HAIR_COLORS} selected={config.hair_color} onSelect={(v) => set('hair_color', v)} />
         </div>
@@ -291,7 +299,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={EYES_OPTIONS} selected={config.eyes} onSelect={(v) => set('eyes', v)} />
+          <ShapeSelector options={EYES_OPTIONS} selected={config.eyes} onSelect={(v) => set('eyes', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={EYE_COLORS} selected={config.eye_color} onSelect={(v) => set('eye_color', v)} />
         </div>
@@ -300,7 +308,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={MOUTH_OPTIONS} selected={config.mouth} onSelect={(v) => set('mouth', v)} />
+          <ShapeSelector options={MOUTH_OPTIONS} selected={config.mouth} onSelect={(v) => set('mouth', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={MOUTH_COLORS} selected={config.mouth_color} onSelect={(v) => set('mouth_color', v)} />
         </div>
@@ -323,7 +331,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Pattern</p>
-          <ShapeSelector options={OUTFIT_PATTERN_OPTIONS} selected={config.outfit_pattern} onSelect={(v) => set('outfit_pattern', v)} />
+          <ShapeSelector options={OUTFIT_PATTERN_OPTIONS} selected={config.outfit_pattern} onSelect={(v) => set('outfit_pattern', v)} lockedItems={locked} />
         </div>
       );
     case 'background':
@@ -337,7 +345,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={HAT_OPTIONS} selected={config.hat} onSelect={(v) => set('hat', v)} />
+          <ShapeSelector options={HAT_OPTIONS} selected={config.hat} onSelect={(v) => set('hat', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={HAT_COLORS} selected={config.hat_color} onSelect={(v) => set('hat_color', v)} />
         </div>
@@ -346,14 +354,14 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Extra</p>
-          <ShapeSelector options={FACE_EXTRA_OPTIONS} selected={config.face_extra} onSelect={(v) => set('face_extra', v)} />
+          <ShapeSelector options={FACE_EXTRA_OPTIONS} selected={config.face_extra} onSelect={(v) => set('face_extra', v)} lockedItems={locked} />
         </div>
       );
     case 'accessory':
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Gear</p>
-          <ShapeSelector options={ACCESSORY_OPTIONS} selected={config.accessory} onSelect={(v) => set('accessory', v)} />
+          <ShapeSelector options={ACCESSORY_OPTIONS} selected={config.accessory} onSelect={(v) => set('accessory', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={ACCESSORY_COLORS} selected={config.accessory_color} onSelect={(v) => set('accessory_color', v)} />
         </div>
@@ -362,7 +370,7 @@ function CategoryContent({ category, config, set }) {
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Companion</p>
-          <ShapeSelector options={PET_OPTIONS} selected={config.pet} onSelect={(v) => set('pet', v)} />
+          <ShapeSelector options={PET_OPTIONS} selected={config.pet} onSelect={(v) => set('pet', v)} lockedItems={locked} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={PET_COLORS} selected={config.pet_color} onSelect={(v) => set('pet_color', v)} />
         </div>
@@ -371,6 +379,13 @@ function CategoryContent({ category, config, set }) {
       return null;
   }
 }
+
+// Map editor categories to avatar_items categories
+const EDITOR_TO_ITEM_CATEGORY = {
+  head: 'head', hair: 'hair', eyes: 'eyes', mouth: 'mouth',
+  hat: 'hat', accessory: 'accessory', face: 'face_extra',
+  pattern: 'outfit_pattern', pet: 'pet',
+};
 
 export default function AvatarEditor({ onConfigChange }) {
   const { user, updateUser } = useAuth();
@@ -381,6 +396,27 @@ export default function AvatarEditor({ onConfigChange }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [openCategory, setOpenCategory] = useState(null);
+  const [lockedByCategory, setLockedByCategory] = useState({});
+
+  // Fetch avatar items to determine locks
+  const fetchLocks = useCallback(async () => {
+    try {
+      const items = await api('/api/avatar/items');
+      if (!Array.isArray(items)) return;
+      const lockMap = {};
+      for (const item of items) {
+        if (!item.unlocked && !item.is_default) {
+          if (!lockMap[item.category]) lockMap[item.category] = new Set();
+          lockMap[item.category].add(item.item_id);
+        }
+      }
+      setLockedByCategory(lockMap);
+    } catch {
+      // If fetch fails, don't lock anything
+    }
+  }, []);
+
+  useEffect(() => { fetchLocks(); }, [fetchLocks]);
 
   useEffect(() => {
     if (user?.avatar_config && Object.keys(user.avatar_config).length > 0) {
@@ -392,6 +428,14 @@ export default function AvatarEditor({ onConfigChange }) {
   useEffect(() => {
     onConfigChange?.(config);
   }, [config, onConfigChange]);
+
+  // Build locks mapped to editor category IDs
+  const editorLocks = {};
+  for (const [editorCat, itemCat] of Object.entries(EDITOR_TO_ITEM_CATEGORY)) {
+    if (lockedByCategory[itemCat]) {
+      editorLocks[editorCat] = lockedByCategory[itemCat];
+    }
+  }
 
   const set = (key, value) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
@@ -466,7 +510,7 @@ export default function AvatarEditor({ onConfigChange }) {
         {/* Expanded options panel */}
         {openCategory && (
           <div className="pt-2 pb-1 border-t border-border/50">
-            <CategoryContent category={openCategory} config={config} set={set} />
+            <CategoryContent category={openCategory} config={config} set={set} lockedByCategory={editorLocks} />
           </div>
         )}
       </div>
