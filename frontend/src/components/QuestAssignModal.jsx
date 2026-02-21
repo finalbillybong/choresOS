@@ -53,7 +53,7 @@ export default function QuestAssignModal({
 
   // Rotation (2+ kids only)
   const [rotationEnabled, setRotationEnabled] = useState(false);
-  const [rotationCadence, setRotationCadence] = useState('weekly');
+  const [rotationCadence, setRotationCadence] = useState('daily');
   const [rotationFirstKid, setRotationFirstKid] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -115,18 +115,18 @@ export default function QuestAssignModal({
       .then((rot) => {
         if (rot && rot.kid_ids && rot.kid_ids.length >= 2) {
           setRotationEnabled(true);
-          setRotationCadence(rot.cadence || 'weekly');
+          setRotationCadence(rot.cadence || 'daily');
           const currentIdx = rot.current_index ?? 0;
           setRotationFirstKid(rot.kid_ids[currentIdx] ?? rot.kid_ids[0]);
         } else {
           setRotationEnabled(false);
-          setRotationCadence('weekly');
+          setRotationCadence('daily');
           setRotationFirstKid(null);
         }
       })
       .catch(() => {
         setRotationEnabled(false);
-        setRotationCadence('weekly');
+        setRotationCadence('daily');
         setRotationFirstKid(null);
       });
 

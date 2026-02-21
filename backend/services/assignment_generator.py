@@ -66,7 +66,9 @@ async def generate_daily_assignments(db: AsyncSession, today: date) -> None:
 
     Called by the daily reset background task. Unlike the week-based
     generator, this function advances rotations when their cadence
-    period has elapsed.
+    period has elapsed.  Rotation is only advanced on days when the
+    chore actually has an occurrence so that non-active days (e.g.
+    weekends for a Mon-Fri custom schedule) don't waste rotation slots.
     """
     now = datetime.now(timezone.utc)
     chores = await _load_active_chores(db)
@@ -77,22 +79,31 @@ async def generate_daily_assignments(db: AsyncSession, today: date) -> None:
         if rules:
             rotation = await _load_rotation(db, chore.id)
 
-            if rotation and should_advance_rotation(rotation, now):
+            # Pre-compute which rules fire today so we know whether
+            # the chore has an occurrence before advancing rotation.
+            created_wd = chore.created_at.weekday()
+            created_dt = (
+                chore.created_at.date()
+                if hasattr(chore.created_at, "date")
+                else chore.created_at
+            )
+            active_rules = [
+                r for r in rules
+                if r.recurrence != Recurrence.once
+                and should_create_on_day(
+                    r.recurrence, today, created_wd, r.custom_days,
+                    created_at_date=created_dt,
+                )
+            ]
+
+            # Only advance rotation on days the chore actually runs
+            if rotation and active_rules and should_advance_rotation(rotation, now):
                 advance_rotation(rotation, now)
 
-            for rule in rules:
-                if rule.recurrence == Recurrence.once:
-                    continue
-
+            for rule in active_rules:
                 # Rotation filtering: only generate for the current rotation kid
                 if rotation and int(rule.user_id) != int(
                     rotation.kid_ids[rotation.current_index]
-                ):
-                    continue
-
-                if not should_create_on_day(
-                    rule.recurrence, today, chore.created_at.weekday(), rule.custom_days,
-                    created_at_date=chore.created_at.date() if hasattr(chore.created_at, 'date') else chore.created_at,
                 ):
                     continue
 
@@ -213,6 +224,7 @@ async def _generate_from_rules(
 ) -> None:
     """Generate week assignments using per-kid assignment rules."""
     today = date.today()
+    active_weekdays = _collect_active_weekdays(rules, chore) if rotation else None
 
     for rule in rules:
         if rule.recurrence == Recurrence.once:
@@ -227,7 +239,9 @@ async def _generate_from_rules(
 
             # Rotation filtering
             if rotation and rotation.kid_ids:
-                expected_kid = get_rotation_kid_for_day(rotation, day, today)
+                expected_kid = get_rotation_kid_for_day(
+                    rotation, day, today, active_weekdays,
+                )
                 if int(rule.user_id) != expected_kid:
                     continue
 
@@ -235,6 +249,26 @@ async def _generate_from_rules(
                 continue
 
             await _create_if_missing(db, chore.id, rule.user_id, day)
+
+
+def _collect_active_weekdays(
+    rules: list[ChoreAssignmentRule], chore: Chore,
+) -> list[int] | None:
+    """Determine the set of weekdays on which a chore has occurrences.
+
+    Returns ``None`` when the chore runs every day (no filtering needed).
+    """
+    weekdays: set[int] = set()
+    for rule in rules:
+        if rule.recurrence in (Recurrence.once,):
+            continue
+        if rule.recurrence == Recurrence.daily:
+            return None  # Runs every day — calendar-day counting is fine
+        if rule.recurrence == Recurrence.custom and rule.custom_days:
+            weekdays.update(rule.custom_days)
+        elif rule.recurrence in (Recurrence.weekly, Recurrence.fortnightly):
+            weekdays.add(chore.created_at.weekday())
+    return sorted(weekdays) if weekdays else None
 
 
 async def _generate_legacy(
