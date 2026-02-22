@@ -4,7 +4,18 @@
 
 A gamified family chore management app with full RPG theming. Parents create quests, assign them to kids with per-child schedules, and kids earn XP by completing them. Progress is tracked through streaks, achievements, a leaderboard, a daily spin wheel, and a treasure shop where kids spend earned XP.
 
-Built mobile-first as an installable PWA — bottom tab bar on phones and tablets, sidebar on larger screens. Supports **push notifications** so kids and parents stay in the loop even when the app isn't open.
+---
+
+## 🚀 Quick Start
+
+**Two ways to use ChoreQuest:**
+
+| 🛠️ **Self-Host** (Free) | 🚀 **Hosted** (Coming Soon) |
+|---|---|
+| Run it on your own server | Zero setup, we handle everything |
+| Completely free | 7-day free trial, then paid |
+| Full control | Automatic updates & backups |
+| **[Self-hosting guide →](#self-hosting)** | **[Join the waitlist →](https://chorequest.co.uk)** |
 
 ---
 
@@ -28,7 +39,9 @@ Built mobile-first as an installable PWA — bottom tab bar on phones and tablet
 
 ---
 
-## 🚀 Getting started
+## 🚀 Self-hosting
+
+Built mobile-first as an installable PWA — bottom tab bar on phones and tablets, sidebar on larger screens. Supports **push notifications** so kids and parents stay in the loop even when the app isn't open.
 
 ### Run with Docker
 
