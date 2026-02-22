@@ -93,7 +93,7 @@ Once the app is accessible over HTTPS, everyone in the family can install it:
 - **Android Chrome** — Tap the menu → *Install app* (or accept the install banner)
 - **Desktop Chrome/Edge** — Click the install icon in the address bar
 
-The app runs in standalone mode — no browser chrome, just like a native app. The service worker caches static assets for fast loading and provides offline fallback pages.
+The app runs in standalone mode — no browser, just like a native app. The service worker caches static assets for fast loading and provides offline fallback pages.
 
 ---
 
