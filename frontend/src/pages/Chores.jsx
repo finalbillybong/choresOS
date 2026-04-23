@@ -410,6 +410,22 @@ export default function Chores() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          api(`/api/chores/${chore.id}`, {
+                            method: 'PUT',
+                            body: { is_bounty: !chore.is_bounty },
+                          }).then(() => fetchChores()).catch(() => {});
+                        }}
+                        className={`p-1 rounded-md hover:bg-surface-raised transition-colors ${
+                          chore.is_bounty ? 'text-accent' : 'text-muted hover:text-accent'
+                        }`}
+                        aria-label={chore.is_bounty ? 'Remove from Bounty Board' : 'Add to Bounty Board'}
+                        title={chore.is_bounty ? 'On Bounty Board — click to remove' : 'Add to Bounty Board'}
+                      >
+                        <ScrollText size={13} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingChore(chore);
                           setShowCreateModal(true);
                         }}
