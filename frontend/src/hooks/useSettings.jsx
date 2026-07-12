@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
+import { useAuth } from './useAuth';
 
 const SettingsContext = createContext({
   leaderboard_enabled: true,
@@ -7,12 +8,16 @@ const SettingsContext = createContext({
   chore_trading_enabled: true,
 });
 
+const DEFAULT_FEATURES = {
+  leaderboard_enabled: true,
+  spin_wheel_enabled: true,
+  chore_trading_enabled: true,
+};
+
 export function SettingsProvider({ children }) {
-  const [features, setFeatures] = useState({
-    leaderboard_enabled: true,
-    spin_wheel_enabled: true,
-    chore_trading_enabled: true,
-  });
+  const { user } = useAuth();
+  const userId = user?.id;
+  const [features, setFeatures] = useState(DEFAULT_FEATURES);
 
   const fetchFeatures = useCallback(async () => {
     try {
@@ -28,8 +33,12 @@ export function SettingsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    fetchFeatures();
-  }, [fetchFeatures]);
+    if (userId) {
+      fetchFeatures();
+    } else {
+      setFeatures(DEFAULT_FEATURES);
+    }
+  }, [fetchFeatures, userId]);
 
   // Re-fetch when settings are saved (listen for custom event)
   useEffect(() => {

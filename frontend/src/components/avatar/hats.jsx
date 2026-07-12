@@ -9,9 +9,10 @@ export function renderHat(style, color) {
           <polygon points="10,8 11,4 13,7 16,3 19,7 21,4 22,8" fill={color} />
           <rect x="10" y="7" width="12" height="2" rx="0.5" fill={color} />
           {/* Gem highlights */}
-          <circle cx="13" cy="6" r="0.5" fill="white" opacity="0.4" />
-          <circle cx="16" cy="4" r="0.5" fill="white" opacity="0.4" />
-          <circle cx="19" cy="6" r="0.5" fill="white" opacity="0.4" />
+          <circle className="avatar-highlight" cx="13" cy="6" r="0.5" fill="white" opacity="0.58" />
+          <circle className="avatar-highlight" cx="16" cy="4" r="0.5" fill="white" opacity="0.58" />
+          <circle className="avatar-highlight" cx="19" cy="6" r="0.5" fill="white" opacity="0.58" />
+          <path className="avatar-detail" d="M10.5,8 Q16,9 21.5,8" stroke="#92400e" strokeWidth="0.25" fill="none" opacity="0.34" />
         </g>
       );
     case 'wizard':
@@ -104,6 +105,44 @@ export function renderHat(style, color) {
           <path d="M8,8 Q6,3 9,5" stroke="#c0c0c0" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           <path d="M24,8 Q26,3 23,5" stroke="#c0c0c0" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           <rect x="8" y="7" width="16" height="2" rx="0.5" fill={color} opacity="0.8" />
+        </g>
+      );
+    case 'star_headset':
+      return (
+        <g>
+          <path d="M9,12 Q9,5.5 16,5.5 Q23,5.5 23,12" stroke={color} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          <rect x="7.5" y="10.5" width="3" height="4.5" rx="1" fill={color} />
+          <rect x="21.5" y="10.5" width="3" height="4.5" rx="1" fill={color} />
+          <path d="M22.5,14 Q24.5,15 24,17" stroke={color} strokeWidth="0.6" fill="none" strokeLinecap="round" />
+          <text x="16" y="5.6" textAnchor="middle" fill="#f9d71c" fontSize="3.2" fontFamily="sans-serif">&#9733;</text>
+        </g>
+      );
+    case 'hunter_hood':
+      return (
+        <g>
+          <path d="M8,11 Q10,3 16,2 Q22,3 24,11 Q20,8 16,8 Q12,8 8,11 Z" fill={color} />
+          <path d="M10,10 Q12,5.5 16,5 Q20,5.5 22,10 Q18,8.2 16,8.2 Q14,8.2 10,10 Z" fill="#111827" opacity="0.45" />
+          <path d="M11,8 Q14,4.5 16,4.3 Q18,4.5 21,8" stroke="white" strokeWidth="0.35" fill="none" opacity="0.16" />
+        </g>
+      );
+    case 'kitty_bow_ears':
+      return (
+        <g>
+          <polygon points="9,9 10,2 14,8" fill={color} />
+          <polygon points="10,8 11,4 13,8" fill="#ffb6c1" opacity="0.55" />
+          <polygon points="23,9 22,2 18,8" fill={color} />
+          <polygon points="22,8 21,4 19,8" fill="#ffb6c1" opacity="0.55" />
+          <path d="M14.5,5.5 L16,4.5 L17.5,5.5 L16,6.5 Z" fill="#f472b6" />
+          <path d="M13,4.8 Q14.5,3.7 16,5.2 Q14.5,6.3 13,4.8 Z" fill="#f472b6" />
+          <path d="M19,4.8 Q17.5,3.7 16,5.2 Q17.5,6.3 19,4.8 Z" fill="#f472b6" />
+        </g>
+      );
+    case 'mischief_hood':
+      return (
+        <g>
+          <path d="M8,11 Q9,4 13,3 L16,7 L19,3 Q23,4 24,11 Q20,8.4 16,8.4 Q12,8.4 8,11 Z" fill={color} />
+          <path d="M11,9 Q13,6 16,6 Q19,6 21,9" stroke="#f472b6" strokeWidth="0.45" fill="none" opacity="0.75" />
+          <circle cx="16" cy="5.8" r="0.7" fill="#f472b6" />
         </g>
       );
     case 'none':

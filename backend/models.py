@@ -47,6 +47,7 @@ class PointType(str, enum.Enum):
     chore_complete = "chore_complete"
     reward_redeem = "reward_redeem"
     bonus = "bonus"
+    bad_behavior = "bad_behavior"
     adjustment = "adjustment"
     achievement = "achievement"
     spin = "spin"
@@ -67,6 +68,7 @@ class NotificationType(str, enum.Enum):
     reward_denied = "reward_denied"
     avatar_item_drop = "avatar_item_drop"
     shoutout = "shoutout"
+    bad_behavior = "bad_behavior"
     pet_levelup = "pet_levelup"
     announcement = "announcement"
     quest_feedback = "quest_feedback"
@@ -297,6 +299,25 @@ class PointTransaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[user_id])
+
+
+class BadBehavior(Base):
+    __tablename__ = "bad_behaviors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    title_normalized: Mapped[str] = mapped_column(String(200), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    base_penalty: Mapped[int] = mapped_column(Integer, nullable=False)
+    bonus_penalty: Mapped[int] = mapped_column(Integer, default=0)
+    bonus_multiplier_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_penalty: Mapped[int] = mapped_column(Integer, nullable=False)
+    occurrence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[created_by])
 
 
 class Achievement(Base):

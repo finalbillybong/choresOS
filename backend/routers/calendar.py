@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from backend.database import get_db
 from backend.models import (
+    BadBehavior,
     Chore,
     ChoreAssignment,
     ChoreAssignmentRule,
@@ -20,6 +21,7 @@ from backend.models import (
 )
 from backend.schemas import TradeRequest
 from backend.dependencies import get_current_user, require_parent
+from backend.services.bad_behavior import build_bad_behavior_calendar_entry
 from backend.websocket_manager import ws_manager
 from backend.services.assignment_generator import auto_generate_week_assignments
 
@@ -102,6 +104,8 @@ async def get_weekly_calendar(
         entry = _build_assignment_entry(a, effective_requires_photo)
         grouped[day_key].append(entry)
 
+    await _append_bad_behavior_entries(db, grouped, week_start, week_end, current_user)
+
     return {
         "week_start": week_start.isoformat(),
         "week_end": week_end.isoformat(),
@@ -109,11 +113,49 @@ async def get_weekly_calendar(
     }
 
 
+async def _append_bad_behavior_entries(
+    db: AsyncSession,
+    grouped: dict[str, list],
+    week_start: date,
+    week_end: date,
+    current_user: User,
+) -> None:
+    stmt = (
+        select(BadBehavior)
+        .options(selectinload(BadBehavior.user), selectinload(BadBehavior.creator))
+        .where(
+            BadBehavior.created_at >= week_start,
+            BadBehavior.created_at < week_end + timedelta(days=1),
+        )
+        .order_by(BadBehavior.created_at, BadBehavior.id)
+    )
+    if current_user.role == UserRole.kid:
+        stmt = stmt.where(BadBehavior.user_id == current_user.id)
+
+    result = await db.execute(stmt)
+    for behavior in result.scalars().all():
+        day_key = behavior.created_at.date().isoformat()
+        if day_key not in grouped:
+            continue
+        grouped[day_key].append(
+            build_bad_behavior_calendar_entry(
+                behavior,
+                user_name=behavior.user.display_name or behavior.user.username
+                if behavior.user
+                else None,
+                created_by_name=behavior.creator.display_name or behavior.creator.username
+                if behavior.creator
+                else None,
+            )
+        )
+
+
 def _build_assignment_entry(
     a: ChoreAssignment, effective_requires_photo: bool
 ) -> dict:
     """Build a calendar assignment dict from a ChoreAssignment with loaded relations."""
     entry = {
+        "entry_type": "assignment",
         "id": a.id,
         "chore_id": a.chore_id,
         "user_id": a.user_id,
@@ -163,6 +205,45 @@ def _build_assignment_entry(
             "created_at": a.user.created_at.isoformat() if a.user.created_at else None,
         }
     return entry
+
+
+@router.get("/assignments/{assignment_id}")
+async def get_calendar_assignment(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return one calendar assignment so deep links can open its week."""
+    result = await db.execute(
+        select(ChoreAssignment)
+        .options(
+            selectinload(ChoreAssignment.chore).selectinload(Chore.category),
+            selectinload(ChoreAssignment.user),
+        )
+        .where(ChoreAssignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+    if assignment is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    if current_user.role == UserRole.kid and assignment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your assignment")
+
+    rule_result = await db.execute(
+        select(ChoreAssignmentRule).where(
+            ChoreAssignmentRule.chore_id == assignment.chore_id,
+            ChoreAssignmentRule.user_id == assignment.user_id,
+            ChoreAssignmentRule.is_active == True,
+        )
+    )
+    rule = rule_result.scalar_one_or_none()
+    effective_requires_photo = (
+        rule.requires_photo
+        if rule is not None
+        else (assignment.chore.requires_photo if assignment.chore else False)
+    )
+
+    return _build_assignment_entry(assignment, effective_requires_photo)
 
 
 # ---------------------------------------------------------------------------

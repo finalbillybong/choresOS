@@ -41,8 +41,9 @@ function PetCat({ colors, position }) {
       {/* Eyes */}
       <circle cx="2" cy="3" r="0.5" fill="#333" />
       <circle cx="4" cy="3" r="0.5" fill="#333" />
-      <circle cx="2.15" cy="2.85" r="0.15" fill="white" />
-      <circle cx="4.15" cy="2.85" r="0.15" fill="white" />
+      <circle className="avatar-highlight" cx="2.15" cy="2.85" r="0.18" fill="white" />
+      <circle className="avatar-highlight" cx="4.15" cy="2.85" r="0.18" fill="white" />
+      <path className="avatar-detail" d="M2.4,4.25 Q3,4.75 3.6,4.25" stroke={colors.accent} strokeWidth="0.2" fill="none" strokeLinecap="round" />
       {/* Whiskers */}
       <line x1="0" y1="3.5" x2="1.5" y2="3.2" stroke={colors.accent} strokeWidth="0.2" opacity="0.5" />
       <line x1="0" y1="4.2" x2="1.5" y2="3.8" stroke={colors.accent} strokeWidth="0.2" opacity="0.5" />

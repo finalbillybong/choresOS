@@ -216,6 +216,67 @@ class PointTransactionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# Bad behavior
+class BadBehaviorCreate(BaseModel):
+    user_id: int
+    title: str = Field(min_length=1, max_length=200)
+    base_penalty: int = Field(gt=0, le=10000)
+    note: str | None = Field(None, max_length=1000)
+
+
+class BadBehaviorPreviewResponse(BaseModel):
+    user_id: int
+    title: str
+    title_normalized: str
+    previous_count: int
+    next_occurrence_count: int
+    bonus_will_trigger: bool
+    repetitions_until_bonus: int
+    bonus_min_percent: int
+    bonus_max_percent: int
+    bonus_min_penalty: int
+    bonus_max_penalty: int
+
+
+class BadBehaviorResponse(BaseModel):
+    id: int
+    user_id: int
+    user_name: str | None = None
+    title: str
+    title_normalized: str
+    note: str | None
+    base_penalty: int
+    bonus_penalty: int
+    bonus_multiplier_percent: int | None
+    total_penalty: int
+    occurrence_count: int
+    repetitions_until_next_bonus: int
+    next_bonus_at: int
+    bonus_min_percent: int
+    bonus_max_percent: int
+    bonus_min_penalty: int
+    bonus_max_penalty: int
+    new_balance: int | None = None
+    created_by: int
+    created_by_name: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class BadBehaviorSummaryResponse(BaseModel):
+    title: str
+    title_normalized: str
+    count: int
+    last_base_penalty: int
+    last_total_penalty: int
+    last_created_at: datetime
+    repetitions_until_bonus: int
+    next_bonus_at: int
+    bonus_min_percent: int
+    bonus_max_percent: int
+
+
 # Achievements
 class AchievementResponse(BaseModel):
     id: int

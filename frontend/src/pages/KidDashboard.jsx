@@ -15,12 +15,17 @@ import {
   HandHeart,
   Gamepad2,
   ShieldOff,
+  Palette,
+  Gift,
+  Route,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
 import { themedTitle } from '../utils/questThemeText';
+import { isQuestCalendarEntry } from '../utils/calendarEntries';
 import PointCounter from '../components/PointCounter';
 import StreakDisplay from '../components/StreakDisplay';
 import SpinWheel from '../components/SpinWheel';
@@ -29,6 +34,11 @@ import RankBadge from '../components/RankBadge';
 import PetLevelBadge from '../components/PetLevelBadge';
 import { QuestBoardOverlay, QuestBoardPageGlow, QuestBoardParticles, QuestBoardDecorations, QuestBoardTitle, BOARD_THEMES, getTheme } from '../components/QuestBoardTheme';
 import { renderPet, renderPetExtras, renderPetAccessory, buildPetColors } from '../components/avatar';
+import {
+  getKidDefaultBoardThemeId,
+  getKidHomeHighlights,
+  KID_STYLE_CUES,
+} from '../utils/kidInterfaceTheme';
 
 // ---------- helpers ----------
 
@@ -70,6 +80,68 @@ const cardVariants = {
   }),
 };
 
+const highlightIcons = {
+  'next-step': Route,
+  style: Palette,
+  rewards: Gift,
+};
+
+function KidFocusMap({ onNavigate }) {
+  const highlights = getKidHomeHighlights();
+
+  return (
+    <div className="game-panel kid-focus-panel p-4 overflow-hidden">
+      <div className="relative z-10 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-cream text-base font-semibold">Mapa skupienia</h2>
+            <p className="text-muted text-xs mt-1">Jeden jasny krok, potem nagroda.</p>
+          </div>
+          <div className="kid-focus-mark" aria-hidden="true">
+            <span>1</span>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          {highlights.map((item) => {
+            const Icon = highlightIcons[item.id] || Sparkles;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.path)}
+                className="kid-step-card text-left"
+              >
+                <span className="kid-step-icon">
+                  <Icon size={16} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-cream text-sm font-semibold">{item.label}</span>
+                  <span className="block text-muted text-[11px] leading-snug mt-0.5">
+                    {item.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5" aria-label="Klimaty stylu">
+          {KID_STYLE_CUES.map((cue) => (
+            <span
+              key={cue.id}
+              className="kid-style-cue"
+              style={{ '--cue-accent': cue.accent }}
+              title={cue.description}
+            >
+              {cue.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- component ----------
 
 export default function KidDashboard() {
@@ -98,7 +170,7 @@ export default function KidDashboard() {
 
   // Board theme — stored in localStorage
   const [boardTheme, setBoardTheme] = useState(() =>
-    localStorage.getItem('chorequest-board-theme') || 'default'
+    localStorage.getItem('chorequest-board-theme') || getKidDefaultBoardThemeId()
   );
   const changeBoardTheme = (id) => {
     setBoardTheme(id);
@@ -139,7 +211,9 @@ export default function KidDashboard() {
 
       // Filter calendar assignments to today and this user only
       const allToday = (calendarRes.days && calendarRes.days[today]) || [];
-      const todayAssignments = allToday.filter((a) => a.user_id === user?.id);
+      const todayAssignments = allToday.filter(
+        (a) => a.user_id === user?.id && isQuestCalendarEntry(a)
+      );
       setAssignments(todayAssignments);
 
       setSpinAvailability(spinRes);
@@ -220,6 +294,8 @@ export default function KidDashboard() {
       </AnimatePresence>
 
       {/* ── Header with stats ── */}
+      <KidFocusMap onNavigate={navigate} />
+
       <div className="game-panel p-5 relative overflow-hidden">
         <QuestBoardOverlay themeId={boardTheme} />
         <QuestBoardParticles themeId={boardTheme} />
@@ -232,7 +308,7 @@ export default function KidDashboard() {
             <button
               onClick={() => setShowThemePicker((v) => !v)}
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-border hover:border-accent hover:bg-accent/10 text-cream transition-all text-base"
-              title="Change board theme"
+              title="Zmień motyw tablicy"
             >
               {BOARD_THEMES.find((t) => t.id === boardTheme)?.icon || '\u2694\uFE0F'}
             </button>
@@ -271,7 +347,7 @@ export default function KidDashboard() {
       {/* ── Board Theme Picker ── */}
       {showThemePicker && (
         <div className="game-panel p-4">
-          <h3 className="text-cream text-xs font-medium mb-3">Choose Board Theme</h3>
+          <h3 className="text-cream text-xs font-medium mb-3">Wybierz motyw tablicy</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {BOARD_THEMES.map((t) => (
               <button

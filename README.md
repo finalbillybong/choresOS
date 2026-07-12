@@ -2,13 +2,21 @@
 
 > *Turn chores into quests, kids into heroes.*
 
+### Avatar and family theme experience
+
+- **Bad behaviour is permanent:** parents and administrators can always record incidents, apply repeat-aware XP penalties, notify the child, and keep informational calendar history. There is no feature flag for this workflow.
+- **Personal themes work per user:** each child keeps a personal colour theme in their profile, and the selected palette visibly recolours the child interface.
+- **Holiday themes are family-wide:** a parent or administrator can manually enable Easter or Christmas for every user in the installation. The holiday palette and decorations temporarily override personal colours; selecting no holiday restores every saved personal choice.
+- **Seasonal decoration is more than colour:** Christmas includes festive greenery, lights, gifts, and falling snow; Easter includes spring branches, painted eggs, petals, grass, and bunny details. Motion respects `prefers-reduced-motion`.
+- **Avatars are fully illustrated:** existing avatar IDs and saved configurations remain compatible, while the SVG renderer adds lighting, shading, material details, and a visual editor with real option previews for avatar parts, accessories, and pets.
+
 A gamified family chore management app with full RPG theming. Parents create quests, assign them to kids with per-child schedules, and kids earn XP by completing them. Progress is tracked through streaks, ranks, tiered achievements (Bronze/Silver/Gold), a leaderboard, a daily spin wheel, and a treasure shop with categories where kids spend earned XP. Kids customise animated SVG avatars with pets that level up alongside them — feed, pet, and play with your companions for bonus XP. Stay connected with the family bulletin board and quest feedback system.
 
 ---
-
+`
 ## 🚀 Quick Start
 
-**Two ways to use ChoreQuest:**
+**Two ways to use ChoreQuest:**`
 
 | 🛠️ **Self-Host** (Free) | 🚀 **Hosted** (Coming Soon) |
 |---|---|

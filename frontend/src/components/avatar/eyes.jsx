@@ -7,10 +7,10 @@ function EyesNormal({ color }) {
     <>
       <ellipse cx="12.75" cy="13.5" rx="1.5" ry="1.6" fill="white" opacity="0.9" />
       <ellipse cx="12.75" cy="13.7" rx="1.1" ry="1.2" fill={color} />
-      <circle cx="13.1" cy="13.3" r="0.35" fill="white" />
+      <circle className="avatar-highlight" cx="13.1" cy="13.3" r="0.35" fill="white" />
       <ellipse cx="19.25" cy="13.5" rx="1.5" ry="1.6" fill="white" opacity="0.9" />
       <ellipse cx="19.25" cy="13.7" rx="1.1" ry="1.2" fill={color} />
-      <circle cx="19.6" cy="13.3" r="0.35" fill="white" />
+      <circle className="avatar-highlight" cx="19.6" cy="13.3" r="0.35" fill="white" />
     </>
   );
 }

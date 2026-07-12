@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from backend.models import Notification
 from backend.database import async_session
+from backend.services.polish_push import translate_push_payload
 from backend.services.push import send_push_to_user
 
 logger = logging.getLogger(__name__)
@@ -51,10 +52,11 @@ def _after_flush(session: Session, flush_context):
     for n in new_notifs:
         notif_type = n.type.value if n.type else "chorequest"
         url = _NOTIFICATION_URL_MAP.get(notif_type, "/")
+        title, body = translate_push_payload(n.title, n.message)
         session.info["_pending_push"].append({
             "user_id": n.user_id,
-            "title": n.title,
-            "body": n.message,
+            "title": title,
+            "body": body,
             "tag": notif_type,
             "url": url,
         })

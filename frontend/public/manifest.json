@@ -1,7 +1,7 @@
 {
   "name": "ChoreQuest",
   "short_name": "ChoreQuest",
-  "description": "Gamified family quest board",
+  "description": "Domowe zadania, XP i nagrody",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0e1a",
@@ -23,5 +23,6 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "lang": "pl"
 }

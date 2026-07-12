@@ -7,6 +7,13 @@ import Inventory from './Inventory';
 import Wishlist from './Wishlist';
 import AvatarShop from './AvatarShop';
 import {
+  DEFAULT_REWARD_EMOJI,
+  REWARD_EMOJI_GROUPS,
+  normalizeRewardIcon,
+  rewardIconForDisplay,
+  suggestRewardEmoji,
+} from '../utils/rewardEmoji';
+import {
   ShoppingBag,
   Plus,
   Pencil,
@@ -25,7 +32,7 @@ const emptyForm = {
   title: '',
   description: '',
   point_cost: 50,
-  icon: '',
+  icon: DEFAULT_REWARD_EMOJI,
   stock: '',
   category: '',
 };
@@ -54,6 +61,7 @@ export default function Rewards() {
   const [showModal, setShowModal] = useState(false);
   const [editingReward, setEditingReward] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [iconManuallySelected, setIconManuallySelected] = useState(false);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -113,18 +121,21 @@ export default function Rewards() {
 
   const openCreateModal = () => {
     setEditingReward(null);
+    setIconManuallySelected(false);
     setForm({ ...emptyForm });
     setFormError('');
     setShowModal(true);
   };
 
   const openEditModal = (reward) => {
+    const normalizedIcon = normalizeRewardIcon(reward.icon);
     setEditingReward(reward);
+    setIconManuallySelected(Boolean(normalizedIcon));
     setForm({
       title: reward.title || '',
       description: reward.description || '',
       point_cost: reward.point_cost ?? reward.cost ?? 50,
-      icon: reward.icon || '',
+      icon: normalizedIcon || suggestRewardEmoji(reward.title) || DEFAULT_REWARD_EMOJI,
       stock: reward.stock != null ? String(reward.stock) : '',
       category: reward.category || '',
     });
@@ -135,11 +146,27 @@ export default function Rewards() {
   const closeModal = () => {
     setShowModal(false);
     setEditingReward(null);
+    setIconManuallySelected(false);
     setFormError('');
   };
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateTitle = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      title: value,
+      icon: iconManuallySelected
+        ? prev.icon
+        : suggestRewardEmoji(value) || DEFAULT_REWARD_EMOJI,
+    }));
+  };
+
+  const updateIcon = (icon) => {
+    setIconManuallySelected(true);
+    updateForm('icon', icon);
   };
 
   const handleSubmit = async () => {
@@ -159,7 +186,7 @@ export default function Rewards() {
       title: form.title.trim(),
       description: form.description.trim(),
       point_cost: Number(form.point_cost),
-      icon: form.icon || undefined,
+      icon: normalizeRewardIcon(form.icon) || DEFAULT_REWARD_EMOJI,
       category: form.category.trim() || undefined,
     };
 
@@ -352,6 +379,7 @@ export default function Rewards() {
             const outOfStock = isOutOfStock(reward);
             const affordable = canAfford(reward);
             const cost = reward.point_cost ?? reward.cost ?? 0;
+            const rewardIcon = rewardIconForDisplay(reward.icon);
 
             return (
               <div
@@ -360,8 +388,8 @@ export default function Rewards() {
               >
                 <div className="flex items-start gap-2.5">
                   <div className="w-10 h-10 rounded-md bg-surface-raised border border-border flex items-center justify-center flex-shrink-0">
-                    {reward.icon ? (
-                      <span className="text-xl">{reward.icon}</span>
+                    {rewardIcon ? (
+                      <span className="text-xl">{rewardIcon}</span>
                     ) : (
                       <Sparkles size={18} className="text-accent" />
                     )}
@@ -461,7 +489,7 @@ export default function Rewards() {
           )}
           <div>
             <label className="block text-cream text-sm font-medium mb-1">Name</label>
-            <input type="text" value={form.title} onChange={(e) => updateForm('title', e.target.value)} placeholder="Extra Screen Time" className="field-input" />
+            <input type="text" value={form.title} onChange={(e) => updateTitle(e.target.value)} placeholder="Extra Screen Time" className="field-input" />
           </div>
           <div>
             <label className="block text-cream text-sm font-medium mb-1">Description</label>
@@ -473,7 +501,10 @@ export default function Rewards() {
           </div>
           <div>
             <label className="block text-cream text-sm font-medium mb-1">Icon (Emoji)</label>
-            <input type="text" value={form.icon} onChange={(e) => updateForm('icon', e.target.value)} placeholder="e.g. trophy, star, gift" className="field-input" />
+            <RewardEmojiPicker
+              value={form.icon}
+              onChange={updateIcon}
+            />
           </div>
           <div>
             <label className="block text-cream text-sm font-medium mb-1">Category (Optional)</label>
@@ -500,6 +531,51 @@ export default function Rewards() {
           Remove <span className="text-gold font-medium">"{deleteTarget?.title}"</span> from the shop?
         </p>
       </Modal>
+    </div>
+  );
+}
+
+function RewardEmojiPicker({ value, onChange }) {
+  const selectedIcon = normalizeRewardIcon(value) || DEFAULT_REWARD_EMOJI;
+
+  return (
+    <div className="space-y-2">
+      <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
+        {REWARD_EMOJI_GROUPS.map((group) => (
+          <div key={group.id} className="space-y-1">
+            <p className="text-muted text-[11px] font-medium">{group.label}</p>
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
+              {group.options.map((option) => {
+                const selected = selectedIcon === option.icon;
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onChange(option.icon)}
+                    aria-label={`Wybierz emoji: ${option.label}`}
+                    aria-pressed={selected}
+                    title={option.label}
+                    className={`h-10 rounded-md border text-xl flex items-center justify-center transition-colors ${
+                      selected
+                        ? 'border-gold bg-gold/15 text-cream'
+                        : 'border-border bg-surface-raised text-cream hover:border-accent/60 hover:bg-accent/10'
+                    }`}
+                  >
+                    {option.icon}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 text-muted text-xs">
+        <span>Selected icon</span>
+        <span className="w-7 h-7 rounded-md bg-surface-raised border border-border flex items-center justify-center text-base">
+          {selectedIcon}
+        </span>
+      </div>
     </div>
   );
 }

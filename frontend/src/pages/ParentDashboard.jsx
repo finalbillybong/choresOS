@@ -19,6 +19,7 @@ import { themedTitle } from '../utils/questThemeText';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import AvatarDisplay from '../components/AvatarDisplay';
+import BadBehaviorPanel from '../components/BadBehaviorPanel';
 import Modal from '../components/Modal';
 
 export default function ParentDashboard() {
@@ -387,6 +388,8 @@ export default function ParentDashboard() {
           Award Bonus XP
         </button>
       </section>
+
+      <BadBehaviorPanel kids={familyStats} onRecorded={fetchData} />
 
       {/* Bonus XP Modal */}
       <Modal

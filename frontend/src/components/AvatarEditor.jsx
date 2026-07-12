@@ -4,8 +4,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import AvatarDisplay from './AvatarDisplay';
+import AvatarOptionCard from './avatar/AvatarOptionCard';
 import { renderPet, renderPetExtras, buildPetColors } from './avatar/pets';
-import { Save, Loader2, ChevronLeft, ChevronRight, Lock, Heart, Star, Crosshair, ArrowLeft } from 'lucide-react';
+import { THEMED_AVATAR_OPTIONS } from './avatar/themedAvatarCatalog';
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleUserRound,
+  Crosshair,
+  Crown,
+  Eye,
+  Heart,
+  Image,
+  Loader2,
+  Palette,
+  PawPrint,
+  Save,
+  Scissors,
+  Shield,
+  Shirt,
+  Smile,
+  Sparkles,
+  Star,
+  SwatchBook,
+  WandSparkles,
+} from 'lucide-react';
 
 const HEAD_OPTIONS = [
   { id: 'round', label: 'Round' },
@@ -40,6 +65,7 @@ const HAIR_OPTIONS = [
   { id: 'shoulder', label: 'Shoulder' },
   { id: 'undercut', label: 'Undercut' },
   { id: 'twin_buns', label: 'Twin Buns' },
+  ...THEMED_AVATAR_OPTIONS.hair,
 ];
 
 const EYES_OPTIONS = [
@@ -97,6 +123,7 @@ const HAT_OPTIONS = [
   { id: 'cat_ears', label: 'Cat Ears' },
   { id: 'halo', label: 'Halo' },
   { id: 'viking', label: 'Viking' },
+  ...THEMED_AVATAR_OPTIONS.hat,
 ];
 
 const ACCESSORY_OPTIONS = [
@@ -107,6 +134,7 @@ const ACCESSORY_OPTIONS = [
   { id: 'wings', label: 'Wings' },
   { id: 'shield', label: 'Shield' },
   { id: 'sword', label: 'Sword' },
+  ...THEMED_AVATAR_OPTIONS.accessory,
 ];
 
 const FACE_EXTRA_OPTIONS = [
@@ -117,6 +145,7 @@ const FACE_EXTRA_OPTIONS = [
   { id: 'scar', label: 'Scar' },
   { id: 'bandage', label: 'Bandage' },
   { id: 'stickers', label: 'Stickers' },
+  ...THEMED_AVATAR_OPTIONS.face_extra,
 ];
 
 const OUTFIT_PATTERN_OPTIONS = [
@@ -126,6 +155,7 @@ const OUTFIT_PATTERN_OPTIONS = [
   { id: 'camo', label: 'Camo' },
   { id: 'tie_dye', label: 'Tie Dye' },
   { id: 'plaid', label: 'Plaid' },
+  ...THEMED_AVATAR_OPTIONS.outfit_pattern,
 ];
 
 const PET_OPTIONS = [
@@ -243,63 +273,102 @@ const DEFAULT_CONFIG = {
 };
 
 const CATEGORIES = [
-  { id: 'head', label: 'Head' },
-  { id: 'skin', label: 'Skin' },
-  { id: 'hair', label: 'Hair' },
-  { id: 'eyes', label: 'Eyes' },
-  { id: 'mouth', label: 'Mouth' },
-  { id: 'body', label: 'Body' },
-  { id: 'outfit', label: 'Outfit' },
-  { id: 'pattern', label: 'Pattern' },
-  { id: 'background', label: 'BG' },
-  { id: 'hat', label: 'Hat' },
-  { id: 'face', label: 'Face' },
-  { id: 'accessory', label: 'Gear' },
-  { id: 'pet', label: 'Pet' },
+  { id: 'head', label: 'Head', icon: CircleUserRound },
+  { id: 'skin', label: 'Skin', icon: Palette },
+  { id: 'hair', label: 'Hair', icon: Scissors },
+  { id: 'eyes', label: 'Eyes', icon: Eye },
+  { id: 'mouth', label: 'Mouth', icon: Smile },
+  { id: 'body', label: 'Body', icon: Shirt },
+  { id: 'outfit', label: 'Outfit', icon: SwatchBook },
+  { id: 'pattern', label: 'Pattern', icon: Sparkles },
+  { id: 'background', label: 'BG', icon: Image },
+  { id: 'hat', label: 'Hat', icon: Crown },
+  { id: 'face', label: 'Face', icon: WandSparkles },
+  { id: 'accessory', label: 'Gear', icon: Shield },
+  { id: 'pet', label: 'Pet', icon: PawPrint },
 ];
 
 function ColorSwatch({ colors, selected, onSelect }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-2.5">
       {colors.map((c) => (
         <button
+          type="button"
           key={c}
           onClick={() => onSelect(c)}
-          className={`w-7 h-7 rounded-full border-2 transition-all ${
-            selected === c ? 'border-accent' : 'border-transparent hover:border-border-light'
+          className={`relative h-10 w-10 rounded-full border-2 shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+            selected === c
+              ? 'scale-110 border-cream shadow-accent/20'
+              : 'border-white/15 hover:scale-105 hover:border-border-light'
           }`}
           style={{ backgroundColor: c }}
-          aria-label={c}
-        />
+          aria-label={`Colour ${c}`}
+          aria-pressed={selected === c}
+          title={c}
+        >
+          {selected === c ? (
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/12">
+              <Check size={15} className="text-white drop-shadow" strokeWidth={3} />
+            </span>
+          ) : null}
+        </button>
       ))}
     </div>
   );
 }
 
-function ShapeSelector({ options, selected, onSelect, lockedItems, configKey, onPreview, onPreviewEnd }) {
+function previewConfigFor(config, key, value) {
+  if (!config || !key) return config;
+  return { ...config, [key]: value };
+}
+
+function ShapeSelector({
+  options,
+  selected,
+  onSelect,
+  lockedItems,
+  configKey,
+  config,
+  onPreview,
+  onPreviewEnd,
+}) {
+  if (config && configKey) {
+    return (
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+        {options.map((option) => {
+          const isLocked = lockedItems?.has(option.id) || false;
+          return (
+            <AvatarOptionCard
+              key={option.id}
+              option={option}
+              previewConfig={previewConfigFor(config, configKey, option.id)}
+              selected={selected === option.id}
+              locked={isLocked}
+              onSelect={() => onSelect(option.id)}
+              onPreview={() => onPreview?.(configKey, option.id)}
+              onPreviewEnd={onPreviewEnd}
+            />
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((opt) => {
-        const isLocked = lockedItems && lockedItems.has(opt.id);
         return (
           <button
+            type="button"
             key={opt.id}
-            onClick={() => !isLocked && onSelect(opt.id)}
-            onMouseEnter={() => isLocked && configKey && onPreview?.(configKey, opt.id)}
-            onMouseLeave={() => isLocked && onPreviewEnd?.()}
-            onTouchStart={() => isLocked && configKey && onPreview?.(configKey, opt.id)}
-            onTouchEnd={() => isLocked && onPreviewEnd?.()}
-            onTouchCancel={() => isLocked && onPreviewEnd?.()}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1 select-none ${
-              isLocked
-                ? 'border-amber-500/30 text-muted/60 bg-amber-500/5'
-                : selected === opt.id
+            onClick={() => onSelect(opt.id)}
+            aria-pressed={selected === opt.id}
+            className={`min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+              selected === opt.id
                 ? 'border-accent bg-accent/10 text-accent'
                 : 'border-border text-muted hover:border-border-light hover:text-cream'
             }`}
-            style={isLocked ? { WebkitTouchCallout: 'none', touchAction: 'manipulation' } : undefined}
           >
-            {isLocked && <Lock size={10} className="text-amber-500/60" />}
             {opt.label}
           </button>
         );
@@ -308,35 +377,38 @@ function ShapeSelector({ options, selected, onSelect, lockedItems, configKey, on
   );
 }
 
-function MultiShapeSelector({ options, selected, onToggle, lockedItems, configKey, onPreview, onPreviewEnd }) {
-  // selected is an array of ids
+function MultiShapeSelector({
+  options,
+  selected,
+  onToggle,
+  lockedItems,
+  configKey,
+  config,
+  onPreview,
+  onPreviewEnd,
+}) {
   const selectedSet = new Set(selected || []);
   return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => {
-        const isLocked = lockedItems && lockedItems.has(opt.id);
-        const isActive = selectedSet.has(opt.id);
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+      {options.map((option) => {
+        const isLocked = lockedItems?.has(option.id) || false;
+        const isActive = selectedSet.has(option.id);
+        const previewConfig = {
+          ...config,
+          accessories: [option.id],
+          accessory: option.id,
+        };
         return (
-          <button
-            key={opt.id}
-            onClick={() => !isLocked && onToggle(opt.id)}
-            onMouseEnter={() => isLocked && configKey && onPreview?.(configKey, opt.id)}
-            onMouseLeave={() => isLocked && onPreviewEnd?.()}
-            onTouchStart={() => isLocked && configKey && onPreview?.(configKey, opt.id)}
-            onTouchEnd={() => isLocked && onPreviewEnd?.()}
-            onTouchCancel={() => isLocked && onPreviewEnd?.()}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1 select-none ${
-              isLocked
-                ? 'border-amber-500/30 text-muted/60 bg-amber-500/5'
-                : isActive
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-border text-muted hover:border-border-light hover:text-cream'
-            }`}
-            style={isLocked ? { WebkitTouchCallout: 'none', touchAction: 'manipulation' } : undefined}
-          >
-            {isLocked && <Lock size={10} className="text-amber-500/60" />}
-            {opt.label}
-          </button>
+          <AvatarOptionCard
+            key={option.id}
+            option={option}
+            previewConfig={previewConfig}
+            selected={isActive}
+            locked={isLocked}
+            onSelect={() => onToggle(option.id)}
+            onPreview={() => onPreview?.(configKey, option.id)}
+            onPreviewEnd={onPreviewEnd}
+          />
         );
       })}
     </div>
@@ -455,7 +527,7 @@ function PetCustomiser({ config, set, locked, previewProps, petStats }) {
       {/* Companion picker */}
       <div>
         <p className="text-muted text-xs font-medium mb-2">Companion</p>
-        <ShapeSelector options={PET_OPTIONS} selected={config.pet} onSelect={(v) => set('pet', v)} lockedItems={locked} configKey="pet" {...previewProps} />
+        <ShapeSelector options={PET_OPTIONS} selected={config.pet} onSelect={(v) => set('pet', v)} lockedItems={locked} configKey="pet" config={config} {...previewProps} />
       </div>
 
       {hasPet && (
@@ -577,7 +649,7 @@ function PetCustomiser({ config, set, locked, previewProps, petStats }) {
           {/* Pet Accessories */}
           <div>
             <p className="text-muted text-xs font-medium mb-2">Pet Accessory</p>
-            <ShapeSelector options={PET_ACCESSORY_OPTIONS} selected={config.pet_accessory || 'none'} onSelect={(v) => set('pet_accessory', v)} />
+            <ShapeSelector options={PET_ACCESSORY_OPTIONS} selected={config.pet_accessory || 'none'} onSelect={(v) => set('pet_accessory', v)} configKey="pet_accessory" config={config} {...previewProps} />
           </div>
         </>
       )}
@@ -593,7 +665,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Shape</p>
-          <ShapeSelector options={HEAD_OPTIONS} selected={config.head} onSelect={(v) => set('head', v)} lockedItems={locked} configKey="head" {...previewProps} />
+          <ShapeSelector options={HEAD_OPTIONS} selected={config.head} onSelect={(v) => set('head', v)} lockedItems={locked} configKey="head" config={config} {...previewProps} />
         </div>
       );
     case 'skin':
@@ -607,7 +679,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={HAIR_OPTIONS} selected={config.hair} onSelect={(v) => set('hair', v)} lockedItems={locked} configKey="hair" {...previewProps} />
+          <ShapeSelector options={HAIR_OPTIONS} selected={config.hair} onSelect={(v) => set('hair', v)} lockedItems={locked} configKey="hair" config={config} {...previewProps} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={HAIR_COLORS} selected={config.hair_color} onSelect={(v) => set('hair_color', v)} />
         </div>
@@ -616,7 +688,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={EYES_OPTIONS} selected={config.eyes} onSelect={(v) => set('eyes', v)} lockedItems={locked} configKey="eyes" {...previewProps} />
+          <ShapeSelector options={EYES_OPTIONS} selected={config.eyes} onSelect={(v) => set('eyes', v)} lockedItems={locked} configKey="eyes" config={config} {...previewProps} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={EYE_COLORS} selected={config.eye_color} onSelect={(v) => set('eye_color', v)} />
         </div>
@@ -625,7 +697,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={MOUTH_OPTIONS} selected={config.mouth} onSelect={(v) => set('mouth', v)} lockedItems={locked} configKey="mouth" {...previewProps} />
+          <ShapeSelector options={MOUTH_OPTIONS} selected={config.mouth} onSelect={(v) => set('mouth', v)} lockedItems={locked} configKey="mouth" config={config} {...previewProps} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={MOUTH_COLORS} selected={config.mouth_color} onSelect={(v) => set('mouth_color', v)} />
         </div>
@@ -634,7 +706,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Shape</p>
-          <ShapeSelector options={BODY_OPTIONS} selected={config.body} onSelect={(v) => set('body', v)} />
+          <ShapeSelector options={BODY_OPTIONS} selected={config.body} onSelect={(v) => set('body', v)} configKey="body" config={config} />
         </div>
       );
     case 'outfit':
@@ -648,7 +720,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Pattern</p>
-          <ShapeSelector options={OUTFIT_PATTERN_OPTIONS} selected={config.outfit_pattern} onSelect={(v) => set('outfit_pattern', v)} lockedItems={locked} configKey="outfit_pattern" {...previewProps} />
+          <ShapeSelector options={OUTFIT_PATTERN_OPTIONS} selected={config.outfit_pattern} onSelect={(v) => set('outfit_pattern', v)} lockedItems={locked} configKey="outfit_pattern" config={config} {...previewProps} />
         </div>
       );
     case 'background':
@@ -662,7 +734,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Style</p>
-          <ShapeSelector options={HAT_OPTIONS} selected={config.hat} onSelect={(v) => set('hat', v)} lockedItems={locked} configKey="hat" {...previewProps} />
+          <ShapeSelector options={HAT_OPTIONS} selected={config.hat} onSelect={(v) => set('hat', v)} lockedItems={locked} configKey="hat" config={config} {...previewProps} />
           <p className="text-muted text-xs font-medium">Colour</p>
           <ColorSwatch colors={HAT_COLORS} selected={config.hat_color} onSelect={(v) => set('hat_color', v)} />
         </div>
@@ -671,7 +743,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Extra</p>
-          <ShapeSelector options={FACE_EXTRA_OPTIONS} selected={config.face_extra} onSelect={(v) => set('face_extra', v)} lockedItems={locked} configKey="face_extra" {...previewProps} />
+          <ShapeSelector options={FACE_EXTRA_OPTIONS} selected={config.face_extra} onSelect={(v) => set('face_extra', v)} lockedItems={locked} configKey="face_extra" config={config} {...previewProps} />
         </div>
       );
     case 'accessory': {
@@ -694,7 +766,7 @@ function CategoryContent({ category, config, set, lockedByCategory, onPreview, o
       return (
         <div className="space-y-3">
           <p className="text-muted text-xs font-medium">Gear <span className="text-muted/50">(select multiple)</span></p>
-          <MultiShapeSelector options={ACCESSORY_OPTIONS} selected={currentAccessories} onToggle={toggleAccessory} lockedItems={locked} configKey="accessory" {...previewProps} />
+          <MultiShapeSelector options={ACCESSORY_OPTIONS} selected={currentAccessories} onToggle={toggleAccessory} lockedItems={locked} configKey="accessory" config={config} {...previewProps} />
           {currentAccessories.length > 0 && (
             <button onClick={clearAll} className="text-[10px] text-crimson hover:text-crimson/80 transition-colors">
               Clear all gear
@@ -749,7 +821,7 @@ function CategoryStrip({ openCategory, onSelect }) {
   };
 
   return (
-    <div className="flex-shrink-0 border-b border-border bg-surface px-1 py-2 relative">
+    <div className="relative flex-shrink-0 border-b border-border bg-surface/95 px-1 py-2 backdrop-blur md:ml-[320px] md:px-3 md:py-3">
       {/* Left arrow */}
       {canScrollLeft && (
         <button
@@ -766,19 +838,25 @@ function CategoryStrip({ openCategory, onSelect }) {
         ref={scrollRef}
         className="flex gap-2 overflow-x-auto pb-0.5 px-2 scrollbar-hide"
       >
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => onSelect(cat.id)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-              openCategory === cat.id
-                ? 'border-accent bg-accent/15 text-accent'
-                : 'border-border text-muted hover:border-border-light hover:text-cream'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          return (
+            <button
+              type="button"
+              key={cat.id}
+              onClick={() => onSelect(cat.id)}
+              aria-pressed={openCategory === cat.id}
+              className={`flex min-h-11 flex-shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+                openCategory === cat.id
+                  ? 'border-accent bg-accent/15 text-accent shadow-sm shadow-accent/10'
+                  : 'border-border text-muted hover:border-border-light hover:bg-surface-raised/50 hover:text-cream'
+              }`}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Right arrow */}
@@ -891,10 +969,13 @@ export default function AvatarEditor() {
     }
   };
 
+  const savedConfig = { ...DEFAULT_CONFIG, ...(user?.avatar_config || {}) };
+  const isDirty = JSON.stringify(config) !== JSON.stringify(savedConfig);
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-surface">
+    <div className="avatar-editor-shell fixed inset-0 z-50 flex flex-col bg-surface">
       {/* ─── Pinned top: back button + avatar preview ─── */}
-      <div className="flex-shrink-0 border-b border-border bg-surface-raised/50 px-4 pt-3 pb-5">
+      <div className="avatar-preview-stage relative flex-shrink-0 overflow-hidden border-b border-border bg-surface-raised/50 px-4 pb-5 pt-3 md:absolute md:inset-y-0 md:left-0 md:flex md:w-[320px] md:flex-col md:border-b-0 md:border-r md:px-6 md:py-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <button
@@ -904,18 +985,25 @@ export default function AvatarEditor() {
             >
               <ArrowLeft size={18} />
             </button>
-            <h2 className="font-heading text-cream text-sm font-semibold">Customise Avatar</h2>
+            <div>
+              <h2 className="font-heading text-base font-semibold text-cream">Customise Avatar</h2>
+              <p className="hidden text-[11px] text-muted md:block">Build a hero that feels completely yours.</p>
+            </div>
           </div>
           <button
             onClick={save}
-            disabled={saving}
-            className="game-btn game-btn-blue flex items-center gap-1.5 !py-1.5 !px-4 !text-xs"
+            disabled={saving || !isDirty}
+            className="game-btn game-btn-blue flex min-h-10 items-center gap-1.5 !rounded-xl !px-4 !py-2 !text-xs shadow-lg shadow-accent/10"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? 'Saving...' : msg || 'Save'}
+            {saving ? 'Saving...' : msg || 'Save avatar'}
           </button>
         </div>
-        <div className="flex justify-center">
+        <div className="relative flex flex-1 items-center justify-center py-1 md:py-6">
+          <div className="avatar-stage-halo absolute h-52 w-52 rounded-full" />
+          <span className="absolute left-3 top-1 text-2xl text-accent/30">✦</span>
+          <span className="absolute bottom-2 right-4 text-xl text-gold/35">✧</span>
+          <div className="relative z-10 rounded-[28px] border border-white/10 bg-surface-raised/35 p-3 shadow-2xl backdrop-blur-sm">
           {openCategory === 'pet' && config.pet_position === 'custom' && config.pet && config.pet !== 'none' ? (
             <TapToPlaceOverlay
               config={displayConfig}
@@ -925,19 +1013,27 @@ export default function AvatarEditor() {
               }}
             />
           ) : (
-            <div className={`avatar-idle rounded-md transition-shadow duration-300`}>
+            <div className="avatar-idle rounded-full transition-shadow duration-300">
               <AvatarDisplay config={displayConfig} size="xl" />
             </div>
           )}
+          </div>
         </div>
+        {isDirty ? (
+          <p className="hidden items-center justify-center gap-1.5 text-[11px] font-medium text-amber-300 md:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-300" /> Unsaved changes
+          </p>
+        ) : (
+          <p className="hidden text-center text-[11px] text-muted md:block">Your avatar is saved</p>
+        )}
       </div>
 
       {/* ─── Category strip (pinned, horizontal scroll with arrows) ─── */}
       <CategoryStrip openCategory={openCategory} onSelect={setOpenCategory} />
 
       {/* ─── Scrollable options area ─── */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
-        {openCategory && (
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 md:ml-[320px] md:p-6">
+        {openCategory ? (
           <CategoryContent
             category={openCategory}
             config={config}
@@ -946,7 +1042,7 @@ export default function AvatarEditor() {
             onPreview={handlePreview}
             onPreviewEnd={handlePreviewEnd}
           />
-        )}
+        ) : null}
       </div>
     </div>
   );

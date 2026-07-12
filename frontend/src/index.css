@@ -198,6 +198,155 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-border-light);
 }
 
+/* Kid interface: safe interest-inspired, high-readability shell */
+.kid-interface {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 11%, transparent) 0%, color-mix(in srgb, var(--color-accent-light) 6%, transparent) 240px, transparent 560px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 34px),
+    var(--color-navy);
+  background-attachment: fixed;
+}
+
+.light-mode .kid-interface {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 13%, transparent) 0%, color-mix(in srgb, var(--color-accent-light) 8%, transparent) 240px, transparent 560px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-accent) 4%, transparent) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-accent-light) 3%, transparent) 0 1px, transparent 1px 34px),
+    var(--color-navy);
+  background-attachment: fixed;
+}
+
+.kid-interface main {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 0%, transparent 34%),
+    linear-gradient(315deg, color-mix(in srgb, var(--color-accent-light) 4%, transparent) 0%, transparent 38%);
+}
+
+.kid-interface .game-panel {
+  border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+  box-shadow: 0 10px 28px rgba(12, 8, 20, 0.18);
+}
+
+.kid-interface .game-panel:hover {
+  border-color: color-mix(in srgb, var(--color-accent-light) 42%, var(--color-border));
+}
+
+.kid-interface .game-btn,
+.kid-interface button {
+  min-height: 40px;
+}
+
+.kid-interface button:focus-visible,
+.kid-interface a:focus-visible,
+.kid-interface input:focus-visible,
+.kid-interface select:focus-visible,
+.kid-interface textarea:focus-visible {
+  outline: 3px solid rgba(94, 234, 212, 0.55);
+  outline-offset: 2px;
+}
+
+.kid-interface .xp-bar {
+  height: 8px;
+  border-radius: 999px;
+}
+
+.kid-interface .xp-bar-fill {
+  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent-light) 58%, var(--color-gold) 100%);
+}
+
+.kid-focus-panel {
+  position: relative;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 16%, transparent) 0%, color-mix(in srgb, var(--color-accent-light) 8%, transparent) 52%, color-mix(in srgb, var(--color-gold) 8%, transparent) 100%),
+    var(--color-surface);
+}
+
+.kid-focus-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--color-accent), var(--color-accent-light), var(--color-gold));
+}
+
+.kid-focus-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.14);
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.kid-step-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 76px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.light-mode .kid-step-card {
+  border-color: rgba(219, 39, 119, 0.16);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.kid-step-card:hover {
+  border-color: rgba(94, 234, 212, 0.52);
+  background: rgba(94, 234, 212, 0.08);
+  transform: translateY(-1px);
+}
+
+.kid-step-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #171221;
+  background: linear-gradient(135deg, #f472b6, #22d3ee);
+}
+
+.kid-style-cue {
+  --cue-accent: var(--color-accent);
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--cue-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--cue-accent) 12%, transparent);
+  color: var(--color-cream);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.kid-interface-audhd .avatar-idle {
+  animation-duration: 6s, 18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kid-interface-audhd *,
+  .kid-interface-audhd *::before,
+  .kid-interface-audhd *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Color Themes */
 
 /* Dragon Fire */
@@ -354,6 +503,282 @@ h1, h2, h3, h4, h5, h6 {
   --color-border-light: #d8b4fe;
 }
 
+/* Family holiday themes */
+.theme-christmas {
+  --color-sky: #60a5fa;
+  --color-accent: #ef4444;
+  --color-accent-light: #fbbf24;
+  --color-gold: #fbbf24;
+  --color-navy: #07140f;
+  --color-navy-light: #0c1e17;
+  --color-navy-mid: #143126;
+  --color-surface: #0d2119;
+  --color-surface-raised: #153428;
+  --color-border: #24533f;
+  --color-border-light: #3d745c;
+  --color-cream: #fffaf0;
+  --color-muted: #b8cfc4;
+}
+
+.theme-christmas.light-mode {
+  --color-navy: #f3faf6;
+  --color-navy-light: #e4f3e9;
+  --color-navy-mid: #d4eadc;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f1f8f3;
+  --color-border: #b9dac5;
+  --color-border-light: #86b99a;
+  --color-cream: #173526;
+  --color-muted: #587165;
+}
+
+.theme-easter {
+  --color-sky: #7dd3fc;
+  --color-accent: #f472b6;
+  --color-accent-light: #86efac;
+  --color-gold: #fde68a;
+  --color-navy: #151223;
+  --color-navy-light: #201a31;
+  --color-navy-mid: #2d2441;
+  --color-surface: #211b33;
+  --color-surface-raised: #312744;
+  --color-border: #493a61;
+  --color-border-light: #6b5585;
+  --color-cream: #fff8fd;
+  --color-muted: #cfc2d8;
+}
+
+.theme-easter.light-mode {
+  --color-navy: #fff8fc;
+  --color-navy-light: #f8edf5;
+  --color-navy-mid: #eee2ed;
+  --color-surface: #ffffff;
+  --color-surface-raised: #fbf1f8;
+  --color-border: #e5cfe0;
+  --color-border-light: #cfaec6;
+  --color-cream: #34263a;
+  --color-muted: #74647a;
+}
+
+.theme-christmas body,
+.theme-easter body {
+  background:
+    radial-gradient(circle at 12% -5%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 30%),
+    radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--color-accent-light) 14%, transparent), transparent 28%),
+    var(--color-navy);
+}
+
+.theme-christmas .game-panel,
+.theme-easter .game-panel {
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.seasonal-theme-layer {
+  --seasonal-safe-top: 54px;
+  contain: layout paint;
+}
+
+.seasonal-garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 54px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  filter: drop-shadow(0 4px 9px rgba(0, 0, 0, 0.24));
+}
+
+.seasonal-garland-christmas {
+  background: linear-gradient(180deg, rgba(4, 44, 27, 0.72), transparent);
+}
+
+.seasonal-evergreen {
+  position: absolute;
+  top: -12px;
+  left: -8px;
+  font-size: 52px;
+  transform: rotate(34deg);
+  opacity: 0.82;
+}
+
+.seasonal-evergreen-right {
+  left: auto;
+  right: -8px;
+  transform: scaleX(-1) rotate(34deg);
+}
+
+.seasonal-light-string {
+  width: min(76vw, 760px);
+  height: 24px;
+  border-top: 2px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.seasonal-light {
+  width: 7px;
+  height: 11px;
+  margin-top: -2px;
+  border-radius: 45% 45% 60% 60%;
+  box-shadow: 0 0 12px currentColor;
+  animation: seasonal-light-twinkle 2.2s ease-in-out infinite alternate;
+  animation-delay: calc(var(--seasonal-index) * -0.17s);
+}
+
+.seasonal-particles {
+  position: absolute;
+  inset: 0;
+}
+
+.seasonal-particle {
+  position: absolute;
+  left: var(--seasonal-left);
+  top: -24px;
+  width: var(--seasonal-size);
+  height: var(--seasonal-size);
+  opacity: 0.68;
+  will-change: transform;
+}
+
+.seasonal-snowflake {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: var(--seasonal-size);
+  text-shadow: 0 0 8px rgba(147, 197, 253, 0.8);
+  animation: seasonal-snow-fall var(--seasonal-duration) linear infinite;
+  animation-delay: var(--seasonal-delay);
+}
+
+.seasonal-petal {
+  background: var(--petal-color);
+  border-radius: 90% 10% 70% 30%;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.55);
+  animation: seasonal-petal-drift var(--seasonal-duration) linear infinite;
+  animation-delay: var(--seasonal-delay);
+}
+
+.seasonal-garland-easter {
+  justify-content: space-between;
+  padding-inline: 9vw;
+  background: linear-gradient(180deg, rgba(134, 239, 172, 0.18), transparent);
+}
+
+.seasonal-spring-branch {
+  font-size: 38px;
+  transform: rotate(18deg);
+  opacity: 0.8;
+}
+
+.seasonal-spring-branch-right {
+  transform: scaleX(-1) rotate(18deg);
+}
+
+.seasonal-egg-row {
+  display: flex;
+  gap: clamp(12px, 4vw, 38px);
+  padding-top: 5px;
+}
+
+.seasonal-egg {
+  width: 16px;
+  height: 21px;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.7), transparent 32%),
+    repeating-linear-gradient(45deg, transparent 0 4px, rgba(255, 255, 255, 0.28) 4px 6px),
+    var(--egg-color);
+  transform: rotate(calc((var(--seasonal-index) - 2) * 5deg));
+  box-shadow: 0 4px 8px rgba(72, 44, 86, 0.2);
+}
+
+.seasonal-corner {
+  position: absolute;
+  bottom: 12px;
+  font-size: clamp(28px, 5vw, 48px);
+  opacity: 0.82;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.2));
+}
+
+.seasonal-corner-left {
+  left: 14px;
+}
+
+.seasonal-corner-right {
+  right: 14px;
+}
+
+.seasonal-bunny {
+  transform: scaleX(-1);
+}
+
+.seasonal-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.seasonal-snow-bank {
+  background:
+    radial-gradient(42px 14px at 8% 100%, rgba(255, 255, 255, 0.82), transparent 72%),
+    radial-gradient(60px 17px at 48% 100%, rgba(219, 234, 254, 0.82), transparent 72%),
+    radial-gradient(48px 14px at 88% 100%, rgba(255, 255, 255, 0.82), transparent 72%);
+}
+
+.seasonal-grass-bank {
+  background:
+    repeating-linear-gradient(102deg, transparent 0 11px, rgba(74, 222, 128, 0.52) 12px 14px, transparent 15px 20px),
+    linear-gradient(180deg, transparent, rgba(34, 197, 94, 0.28));
+}
+
+@keyframes seasonal-snow-fall {
+  0% { transform: translate3d(0, -24px, 0) rotate(0deg); }
+  50% { transform: translate3d(var(--seasonal-sway), 50vh, 0) rotate(160deg); }
+  100% { transform: translate3d(0, 104vh, 0) rotate(340deg); }
+}
+
+@keyframes seasonal-petal-drift {
+  0% { transform: translate3d(0, -24px, 0) rotate(15deg); }
+  45% { transform: translate3d(var(--seasonal-sway), 46vh, 0) rotate(170deg); }
+  100% { transform: translate3d(calc(var(--seasonal-sway) * -0.4), 104vh, 0) rotate(330deg); }
+}
+
+@keyframes seasonal-light-twinkle {
+  from { opacity: 0.48; transform: scale(0.88); }
+  to { opacity: 1; transform: scale(1.08); }
+}
+
+@media (max-width: 639px) {
+  .seasonal-particle:nth-child(even) {
+    display: none;
+  }
+
+  .seasonal-egg-row {
+    gap: 14px;
+  }
+
+  .seasonal-garland-easter {
+    padding-inline: 3vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seasonal-particle,
+  .seasonal-light {
+    animation: none !important;
+  }
+
+  .seasonal-particle {
+    top: var(--seasonal-left);
+  }
+}
+
 /* Hide scrollbar for horizontal strip */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -408,12 +833,75 @@ h1, h2, h3, h4, h5, h6 {
   97% { opacity: 0.5; }
 }
 
-.avatar-idle .avatar-svg {
+.avatar-idle {
   animation:
     avatar-sway 4s ease-in-out infinite,
     avatar-fidget 12s ease-in-out infinite;
   animation-delay: var(--avatar-delay, 0s);
-  transform-origin: 16px 28px;
+  transform-origin: center 88%;
+  will-change: transform;
+}
+
+.avatar-illustration {
+  display: block;
+  shape-rendering: geometricPrecision;
+  isolation: isolate;
+}
+
+.avatar-main-silhouette {
+  transform-origin: 16px 27px;
+}
+
+.avatar-rim-light,
+.avatar-backdrop-orb {
+  pointer-events: none;
+}
+
+.avatar-rim-light {
+  mix-blend-mode: screen;
+}
+
+.avatar-highlight {
+  mix-blend-mode: screen;
+}
+
+.avatar-detail {
+  vector-effect: non-scaling-stroke;
+}
+
+.avatar-editor-shell {
+  background:
+    radial-gradient(circle at 12% 6%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 32%),
+    radial-gradient(circle at 86% 92%, color-mix(in srgb, var(--color-gold) 8%, transparent), transparent 34%),
+    var(--color-surface);
+}
+
+.avatar-preview-stage {
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--color-accent) 15%, transparent), transparent 32%),
+    linear-gradient(155deg, color-mix(in srgb, var(--color-surface-raised) 88%, transparent), color-mix(in srgb, var(--color-navy) 92%, transparent));
+}
+
+.avatar-stage-halo {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--color-accent) 22%, transparent) 0 18%, transparent 19% 31%, color-mix(in srgb, var(--color-accent-light) 13%, transparent) 32% 33%, transparent 34%),
+    conic-gradient(from 20deg, transparent, color-mix(in srgb, var(--color-gold) 14%, transparent), transparent 38%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%);
+  filter: blur(1px);
+  opacity: 0.85;
+}
+
+.avatar-option-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 112px;
+}
+
+.avatar-option-card .avatar-svg {
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.avatar-option-card:hover .avatar-svg {
+  transform: scale(1.06);
+  filter: saturate(1.08);
 }
 
 .avatar-idle .avatar-eyelid {
@@ -442,6 +930,17 @@ h1, h2, h3, h4, h5, h6 {
 .avatar-idle .avatar-sparkle {
   animation: avatar-sparkle 6s ease-in-out infinite;
   animation-delay: var(--avatar-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-idle,
+  .avatar-idle .avatar-eyelid,
+  .avatar-idle .avatar-mouth,
+  .avatar-idle .avatar-pet,
+  .avatar-idle .avatar-pet-tail,
+  .avatar-idle .avatar-sparkle {
+    animation: none !important;
+  }
 }
 
 /* Quest Board Themes — subtle border tints only */

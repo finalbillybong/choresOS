@@ -9,7 +9,8 @@ function MouthGrin({ color }) {
   return (
     <>
       <path d="M12.5,17 Q16,21 19.5,17" stroke={color} strokeWidth="1" fill="none" strokeLinecap="round" />
-      <path d="M13,17.5 Q16,19.5 19,17.5" fill="white" opacity="0.6" />
+      <path className="avatar-highlight" d="M13,17.5 Q16,19.5 19,17.5" fill="white" opacity="0.72" />
+      <path className="avatar-detail" d="M14,18.25 Q16,19.35 18,18.25" stroke="#cbd5e1" strokeWidth="0.18" fill="none" opacity="0.65" />
     </>
   );
 }

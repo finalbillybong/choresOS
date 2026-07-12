@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { themedTitle, themedDescription } from '../utils/questThemeText';
+import { isQuestCalendarEntry } from '../utils/calendarEntries';
 import Modal from '../components/Modal';
 import QuestCreateModal from '../components/QuestCreateModal';
 import QuestAssignModal from '../components/QuestAssignModal';
@@ -139,7 +140,7 @@ export default function Chores() {
       const today = todayISO();
       const calendarRes = await api(`/api/calendar?week_start=${monday}`);
       const dayAssignments = (calendarRes.days && calendarRes.days[today]) || [];
-      setTodayAssignments(dayAssignments);
+      setTodayAssignments(dayAssignments.filter(isQuestCalendarEntry));
     } catch {
       // Non-critical
     }

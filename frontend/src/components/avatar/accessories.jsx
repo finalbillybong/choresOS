@@ -8,7 +8,8 @@ export function renderAccessory(style, color) {
         <g>
           <rect x="9" y="20" width="14" height="3" rx="1" fill={color} />
           <rect x="9" y="20" width="3" height="6" rx="1" fill={color} />
-          <line x1="10" y1="22" x2="11" y2="22" stroke="white" strokeWidth="0.3" opacity="0.15" />
+          <line className="avatar-highlight" x1="10" y1="22" x2="11" y2="22" stroke="white" strokeWidth="0.4" opacity="0.3" />
+          <path className="avatar-detail" d="M10,24 L11,25 M10.8,24 L11.8,25" stroke="#020617" strokeWidth="0.2" opacity="0.25" />
         </g>
       );
     case 'necklace':
@@ -67,6 +68,34 @@ export function renderAccessory(style, color) {
           <rect x="19.4" y="11.5" width="1.2" height="5" rx="0.3" fill={color} />
           {/* Pommel */}
           <circle cx="20" cy="11.5" r="1" fill={color} />
+        </g>
+      );
+    case 'stage_mic':
+      return (
+        <g transform="rotate(-25, 20, 22)">
+          <rect x="19.4" y="17" width="1.2" height="8" rx="0.6" fill={color} />
+          <circle cx="20" cy="16.2" r="1.7" fill="#c0c0c0" />
+          <path d="M18.8,16.2 L21.2,16.2" stroke="white" strokeWidth="0.25" opacity="0.55" />
+          <path d="M19.1,15.4 L20.9,17" stroke="white" strokeWidth="0.2" opacity="0.35" />
+        </g>
+      );
+    case 'spirit_blade':
+      return (
+        <g transform="rotate(35, 21, 23)">
+          <path d="M20,10 L21.2,22 L20,29 L18.8,22 Z" fill="#dbeafe" />
+          <path d="M20,10 L20.4,27" stroke="white" strokeWidth="0.35" opacity="0.75" />
+          <rect x="17.4" y="21" width="5.2" height="1.4" rx="0.4" fill={color} />
+          <rect x="19.3" y="22" width="1.4" height="4.2" rx="0.4" fill={color} />
+          <circle cx="20" cy="26.4" r="0.9" fill="#a78bfa" />
+        </g>
+      );
+    case 'bell_collar':
+      return (
+        <g>
+          <path d="M10.5,21.5 Q16,24.5 21.5,21.5" stroke={color} strokeWidth="1" fill="none" strokeLinecap="round" />
+          <circle cx="16" cy="23.8" r="1.25" fill="#f9d71c" />
+          <line x1="15.2" y1="23.8" x2="16.8" y2="23.8" stroke="#8b4513" strokeWidth="0.25" />
+          <circle cx="16" cy="24.4" r="0.22" fill="#8b4513" />
         </g>
       );
     case 'none':

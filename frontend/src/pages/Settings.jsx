@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
+import { SPECIAL_THEMES } from '../utils/themeResolver';
 import {
   Settings as CogIcon,
   Save,
@@ -15,6 +17,12 @@ import VacationSettings from '../components/VacationSettings';
 export default function Settings() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const {
+    specialTheme,
+    setSpecialTheme,
+    specialThemeSaving,
+    specialThemeError,
+  } = useTheme();
 
   const isParentOrAdmin = user?.role === 'parent' || user?.role === 'admin';
 
@@ -206,6 +214,69 @@ export default function Settings() {
                 label="Chore Trading"
               />
             </div>
+          </div>
+
+          {/* Family holiday theme */}
+          <div className="game-panel overflow-hidden">
+            <div className="border-b border-border bg-gradient-to-r from-accent/10 via-transparent to-gold/10 p-4">
+              <h2 className="text-cream text-sm font-semibold mb-1">Holiday Theme</h2>
+              <p className="text-muted text-xs leading-relaxed">
+                This family-wide theme temporarily overrides everyone&apos;s personal colours.
+              </p>
+            </div>
+            <div className="grid gap-2 p-4 sm:grid-cols-3">
+              {SPECIAL_THEMES.map((holidayTheme) => {
+                const isActive = specialTheme === holidayTheme.id;
+                return (
+                  <button
+                    key={holidayTheme.id}
+                    type="button"
+                    onClick={() => setSpecialTheme(holidayTheme.id)}
+                    disabled={specialThemeSaving}
+                    aria-pressed={isActive}
+                    className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all ${
+                      isActive
+                        ? 'border-accent bg-accent/10 ring-1 ring-accent/30'
+                        : 'border-border bg-surface-raised/30 hover:-translate-y-0.5 hover:border-border-light hover:bg-surface-raised/60'
+                    }`}
+                  >
+                    <div
+                      className="absolute inset-x-0 top-0 h-1"
+                      style={{
+                        background: `linear-gradient(90deg, ${holidayTheme.colors.join(', ')})`,
+                      }}
+                    />
+                    <div className="mb-2 flex items-center justify-between gap-2 pt-1">
+                      <span className="text-2xl" aria-hidden="true">{holidayTheme.icon}</span>
+                      <div className="flex gap-1">
+                        {holidayTheme.colors.map((color) => (
+                          <span
+                            key={color}
+                            className="h-2.5 w-2.5 rounded-full border border-white/20"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-cream text-xs font-semibold">{holidayTheme.label}</p>
+                    <p className="mt-1 text-[10px] leading-relaxed text-muted">
+                      {holidayTheme.description}
+                    </p>
+                    {isActive ? (
+                      <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-accent">
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Active
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            {specialThemeSaving ? (
+              <p className="px-4 pb-4 text-xs text-muted">Saving holiday theme...</p>
+            ) : null}
+            {specialThemeError ? (
+              <p className="px-4 pb-4 text-xs text-crimson">{specialThemeError}</p>
+            ) : null}
           </div>
 
           {/* Daily reset hour */}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
+import { DEFAULT_REWARD_EMOJI, rewardIconForDisplay } from '../utils/rewardEmoji';
 import {
   Package,
   CheckCheck,
@@ -201,7 +202,7 @@ export default function Inventory() {
 
 function LootCard({ redemption, status, showFulfill, onFulfill, fulfilling }) {
   const reward = redemption.reward;
-  const icon = reward?.icon || '🎁';
+  const icon = rewardIconForDisplay(reward?.icon) || DEFAULT_REWARD_EMOJI;
 
   return (
     <div

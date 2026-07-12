@@ -1,0 +1,85 @@
+export const THEMED_AVATAR_OPTIONS = {
+  hair: [
+    { id: 'idol_waves', label: 'Idol Waves' },
+  ],
+  hat: [
+    { id: 'star_headset', label: 'Star Headset' },
+    { id: 'hunter_hood', label: 'Hunter Hood' },
+    { id: 'kitty_bow_ears', label: 'Kitty Bow Ears' },
+    { id: 'mischief_hood', label: 'Mischief Hood' },
+  ],
+  accessory: [
+    { id: 'stage_mic', label: 'Stage Mic' },
+    { id: 'spirit_blade', label: 'Spirit Blade' },
+    { id: 'bell_collar', label: 'Bell Collar' },
+  ],
+  face_extra: [
+    { id: 'rune_marks', label: 'Rune Marks' },
+    { id: 'whiskers', label: 'Whiskers' },
+    { id: 'mischief_mark', label: 'Mischief Mark' },
+  ],
+  outfit_pattern: [
+    { id: 'neon_pulse', label: 'Neon Pulse' },
+    { id: 'moon_sigil', label: 'Moon Sigil' },
+    { id: 'tiny_bows', label: 'Tiny Bows' },
+    { id: 'bat_stars', label: 'Bat Stars' },
+  ],
+};
+
+export const SAFE_THEME_COLLECTIONS = [
+  {
+    id: 'neon_pop_idol',
+    title: 'Neon Pop Idol',
+    description: 'Bright stage gear, glossy hair, and rhythm-game energy.',
+    accent: '#ff4fd8',
+    items: [
+      { category: 'hair', itemId: 'idol_waves', label: 'Idol Waves' },
+      { category: 'hat', itemId: 'star_headset', label: 'Star Headset' },
+      { category: 'accessory', itemId: 'stage_mic', label: 'Stage Mic' },
+      { category: 'outfit_pattern', itemId: 'neon_pulse', label: 'Neon Pulse' },
+    ],
+  },
+  {
+    id: 'shadow_hunter',
+    title: 'Shadow Hunter',
+    description: 'Moonlit fantasy gear for a brave monster-tracker look.',
+    accent: '#7c3aed',
+    items: [
+      { category: 'hat', itemId: 'hunter_hood', label: 'Hunter Hood' },
+      { category: 'accessory', itemId: 'spirit_blade', label: 'Spirit Blade' },
+      { category: 'face_extra', itemId: 'rune_marks', label: 'Rune Marks' },
+      { category: 'outfit_pattern', itemId: 'moon_sigil', label: 'Moon Sigil' },
+    ],
+  },
+  {
+    id: 'sweet_kitty',
+    title: 'Sweet Kitty',
+    description: 'Soft cat-ear details, bow accents, and a cute collar.',
+    accent: '#f472b6',
+    items: [
+      { category: 'hat', itemId: 'kitty_bow_ears', label: 'Kitty Bow Ears' },
+      { category: 'accessory', itemId: 'bell_collar', label: 'Bell Collar' },
+      { category: 'face_extra', itemId: 'whiskers', label: 'Whiskers' },
+      { category: 'outfit_pattern', itemId: 'tiny_bows', label: 'Tiny Bows' },
+    ],
+  },
+  {
+    id: 'midnight_mischief',
+    title: 'Midnight Mischief',
+    description: 'A darker cute style with playful ears and tiny night motifs.',
+    accent: '#a855f7',
+    items: [
+      { category: 'hat', itemId: 'mischief_hood', label: 'Mischief Hood' },
+      { category: 'face_extra', itemId: 'mischief_mark', label: 'Mischief Mark' },
+      { category: 'outfit_pattern', itemId: 'bat_stars', label: 'Bat Stars' },
+    ],
+  },
+];
+
+export const THEMED_AVATAR_ITEM_IDS = [
+  ...new Set(
+    SAFE_THEME_COLLECTIONS.flatMap((collection) =>
+      collection.items.map((item) => item.itemId),
+    ),
+  ),
+];

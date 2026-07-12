@@ -56,6 +56,7 @@ DEFAULT_SETTINGS = {
     "leaderboard_enabled": "true",
     "spin_wheel_enabled": "true",
     "chore_trading_enabled": "true",
+    "special_theme": "none",
 }
 
 # Template quests with RPG-flavoured descriptions
@@ -232,6 +233,7 @@ DEFAULT_AVATAR_ITEMS = [
     ("hair", "shoulder", "Shoulder", _U, _S, 30, False),
     ("hair", "undercut", "Undercut", _U, _S, 30, False),
     ("hair", "twin_buns", "Twin Buns", _R, _S, 40, False),
+    ("hair", "idol_waves", "Idol Waves", _R, _S, 80, False),
     # ── Eyes ──
     ("eyes", "normal", "Normal", _C, _F, None, True),
     ("eyes", "happy", "Happy", _C, _F, None, True),
@@ -277,6 +279,10 @@ DEFAULT_AVATAR_ITEMS = [
     ("hat", "cat_ears", "Cat Ears", _U, _S, 40, False),
     ("hat", "halo", "Halo", _E, _K, 30, False),
     ("hat", "viking", "Viking Helmet", _E, _Q, None, False),
+    ("hat", "star_headset", "Star Headset", _R, _S, 90, False),
+    ("hat", "hunter_hood", "Hunter Hood", _E, _S, 120, False),
+    ("hat", "kitty_bow_ears", "Kitty Bow Ears", _R, _S, 70, False),
+    ("hat", "mischief_hood", "Mischief Hood", _R, _S, 90, False),
     # ── Accessories ──
     ("accessory", "none", "None", _C, _F, None, True),
     ("accessory", "scarf", "Scarf", _U, _S, 30, False),
@@ -286,6 +292,9 @@ DEFAULT_AVATAR_ITEMS = [
     ("accessory", "wings", "Angel Wings", _E, _K, 21, False),
     ("accessory", "shield", "Shield", _R, _S, 60, False),
     ("accessory", "sword", "Sword", _L, _Q, None, False),
+    ("accessory", "stage_mic", "Stage Mic", _U, _S, 70, False),
+    ("accessory", "spirit_blade", "Spirit Blade", _L, _Q, None, False),
+    ("accessory", "bell_collar", "Bell Collar", _U, _S, 45, False),
     # ── Face extras ──
     ("face_extra", "none", "None", _C, _F, None, True),
     ("face_extra", "freckles", "Freckles", _C, _F, None, True),
@@ -294,6 +303,9 @@ DEFAULT_AVATAR_ITEMS = [
     ("face_extra", "scar", "Battle Scar", _R, _Q, None, False),
     ("face_extra", "bandage", "Bandage", _U, _S, 25, False),
     ("face_extra", "stickers", "Stickers", _U, _S, 20, False),
+    ("face_extra", "rune_marks", "Rune Marks", _R, _Q, None, False),
+    ("face_extra", "whiskers", "Whiskers", _U, _S, 35, False),
+    ("face_extra", "mischief_mark", "Mischief Mark", _R, _K, 7, False),
     # ── Outfit patterns ──
     ("outfit_pattern", "none", "None", _C, _F, None, True),
     ("outfit_pattern", "stripes", "Stripes", _C, _F, None, True),
@@ -301,6 +313,10 @@ DEFAULT_AVATAR_ITEMS = [
     ("outfit_pattern", "camo", "Camo", _U, _S, 30, False),
     ("outfit_pattern", "tie_dye", "Tie Dye", _R, _S, 35, False),
     ("outfit_pattern", "plaid", "Plaid", _U, _S, 25, False),
+    ("outfit_pattern", "neon_pulse", "Neon Pulse", _U, _S, 50, False),
+    ("outfit_pattern", "moon_sigil", "Moon Sigil", _R, _S, 75, False),
+    ("outfit_pattern", "tiny_bows", "Tiny Bows", _U, _S, 35, False),
+    ("outfit_pattern", "bat_stars", "Bat Stars", _R, _S, 60, False),
     # ── Pets ──
     ("pet", "none", "None", _C, _F, None, True),
     ("pet", "cat", "Cat", _R, _S, 80, False),
@@ -430,15 +446,35 @@ async def seed_database(db: AsyncSession):
         if migrated > 0:
             await db.commit()
 
-    # Seed avatar items catalogue
-    avatar_count = await db.execute(select(func.count()).select_from(AvatarItem))
-    if avatar_count.scalar() == 0:
-        for cat, item_id, name, rarity, method, value, default in DEFAULT_AVATAR_ITEMS:
+    # Seed/backfill avatar items catalogue.
+    avatar_result = await db.execute(select(AvatarItem))
+    existing_avatar_items = {
+        (item.category, item.item_id): item for item in avatar_result.scalars().all()
+    }
+    avatar_changed = 0
+    for cat, item_id, name, rarity, method, value, default in DEFAULT_AVATAR_ITEMS:
+        existing = existing_avatar_items.get((cat, item_id))
+        if existing is None:
             db.add(AvatarItem(
                 category=cat, item_id=item_id, display_name=name,
                 rarity=rarity, unlock_method=method, unlock_value=value,
                 is_default=default,
             ))
+            avatar_changed += 1
+        elif (
+            existing.display_name != name
+            or existing.rarity != rarity
+            or existing.unlock_method != method
+            or existing.unlock_value != value
+            or existing.is_default != default
+        ):
+            existing.display_name = name
+            existing.rarity = rarity
+            existing.unlock_method = method
+            existing.unlock_value = value
+            existing.is_default = default
+            avatar_changed += 1
+    if avatar_changed > 0:
         await db.commit()
 
     # One-time cleanup: deactivate stale rules created by migration that were

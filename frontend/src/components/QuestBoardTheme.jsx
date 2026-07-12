@@ -1,3 +1,5 @@
+import { KID_BOARD_THEMES } from '../utils/kidInterfaceTheme';
+
 /**
  * Themed Quest Board overlays — decorative elements that change the
  * dashboard look based on the selected board theme.
@@ -64,6 +66,7 @@ export const BOARD_THEMES = [
     cardAccent: '#ec4899',
     particleEmojis: ['\uD83C\uDF38', '\uD83E\uDD8B', '\uD83C\uDF3F', '\u2728', '\uD83C\uDF3A'],
   },
+  ...KID_BOARD_THEMES,
 ];
 
 export function getTheme(themeId) {
@@ -148,6 +151,10 @@ export function QuestBoardTitle({ themeId, children }) {
     space: 'Mission Control',
     underwater: 'Ocean Missions',
     enchanted: 'Garden Quests',
+    mischief: 'Mapa misji skupienia',
+    shadow_hunt: 'Mapa misji łowczyni',
+    block_builder: 'Tablica budowania',
+    arcade_run: 'Tablica biegu',
   };
 
   return <>{titles[themeId] || children || 'Quest Board'}</>;

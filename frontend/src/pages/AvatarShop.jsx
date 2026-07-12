@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
+import { SAFE_THEME_COLLECTIONS } from '../components/avatar/themedAvatarCatalog';
 import {
   Lock,
   Star,
@@ -55,13 +57,13 @@ function unlockLabel(item) {
     case 'shop':
       return `${item.unlock_value} XP`;
     case 'xp':
-      return `Earn ${item.unlock_value} XP`;
+      return `Zdobądź ${item.unlock_value} XP`;
     case 'streak':
-      return `${item.unlock_value}-day streak`;
+      return `${item.unlock_value}-dniowa seria`;
     case 'quest_drop':
-      return 'Quest drop';
+      return 'Drop z misji';
     default:
-      return 'Free';
+      return 'Darmowe';
   }
 }
 
@@ -81,6 +83,7 @@ function UnlockIcon({ method }) {
 }
 
 export default function AvatarShop() {
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const isParent = user?.role === 'parent' || user?.role === 'admin';
   const [items, setItems] = useState([]);
@@ -136,6 +139,7 @@ export default function AvatarShop() {
   }
 
   const userXp = user?.points_balance ?? 0;
+  const itemByKey = new Map(items.map((item) => [`${item.category}:${item.item_id}`, item]));
 
   if (loading) {
     return (
@@ -170,6 +174,67 @@ export default function AvatarShop() {
           {message}
         </div>
       )}
+
+      {/* Themed collections */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-cream text-sm font-semibold">Featured style packs</h2>
+            <p className="text-muted text-xs">Inspired looks without licensed characters or logos.</p>
+          </div>
+          <button
+            onClick={() => navigate('/avatar')}
+            className="game-btn game-btn-blue flex-shrink-0 !py-1.5 !px-3 !text-xs"
+          >
+            Edit avatar
+          </button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {SAFE_THEME_COLLECTIONS.map((collection) => {
+            const ownedCount = collection.items.filter((entry) => {
+              const item = itemByKey.get(`${entry.category}:${entry.itemId}`);
+              return item?.unlocked;
+            }).length;
+            const totalCount = collection.items.length;
+
+            return (
+              <div
+                key={collection.id}
+                className="game-panel p-3 border-l-4"
+                style={{ borderLeftColor: collection.accent }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-cream text-sm font-semibold">{collection.title}</h3>
+                    <p className="text-muted text-xs mt-0.5">{collection.description}</p>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-muted bg-surface-raised whitespace-nowrap">
+                    {ownedCount}/{totalCount}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {collection.items.map((entry) => {
+                    const item = itemByKey.get(`${entry.category}:${entry.itemId}`);
+                    const owned = Boolean(item?.unlocked);
+                    return (
+                      <span
+                        key={`${entry.category}:${entry.itemId}`}
+                        className={`text-[10px] px-1.5 py-0.5 rounded-md border ${
+                          owned
+                            ? 'border-emerald/35 bg-emerald/10 text-emerald'
+                            : 'border-border bg-surface-raised text-muted'
+                        }`}
+                      >
+                        {entry.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-2">
@@ -255,15 +320,15 @@ export default function AvatarShop() {
                         ) : (
                           <ShoppingBag size={12} />
                         )}
-                        {isBuying ? 'Buying...' : `Buy · ${item.unlock_value} XP`}
+                        {isBuying ? 'Kupowanie...' : `Kup \u00B7 ${item.unlock_value} XP`}
                       </button>
                     ) : (
                       <div className="flex items-center gap-1 text-muted text-xs">
                         <Lock size={12} />
-                        {item.unlock_method === 'quest_drop' ? 'Find in quests' :
-                         item.unlock_method === 'xp' ? `Earn ${item.unlock_value} total XP` :
-                         item.unlock_method === 'streak' ? `${item.unlock_value}-day streak` :
-                         'Locked'}
+                        {item.unlock_method === 'quest_drop' ? 'Znajdź w misjach' :
+                         item.unlock_method === 'xp' ? `Zdobądź ${item.unlock_value} XP` :
+                         item.unlock_method === 'streak' ? `${item.unlock_value}-dniowa seria` :
+                         'Zablokowane'}
                       </div>
                     )}
                   </div>

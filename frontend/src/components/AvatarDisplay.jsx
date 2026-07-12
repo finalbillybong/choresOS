@@ -1,3 +1,5 @@
+import { useId, useMemo } from 'react';
+
 import {
   HEAD_MAP,
   EYES_MAP,
@@ -13,6 +15,7 @@ import {
   buildPetColors,
   renderPetAccessory,
 } from './avatar';
+import { buildAvatarPalette } from './avatar/avatarPaint';
 
 const SIZES = {
   xs: 24,
@@ -113,15 +116,34 @@ function headTransform(dy, sx) {
 
 /* ── Main SVG avatar ── */
 function SvgAvatar({ config, size }) {
-  const bgColor = config.bg_color || '#1a1a2e';
-  const headColor = config.head_color || '#ffcc99';
-  const hairColor = config.hair_color || '#4a3728';
+  const rawId = useId();
+  const idPrefix = rawId.replace(/:/g, '');
+  const palette = useMemo(() => buildAvatarPalette(config), [config]);
+  const paintIds = {
+    background: `${idPrefix}-background`,
+    skin: `${idPrefix}-skin`,
+    hair: `${idPrefix}-hair`,
+    outfit: `${idPrefix}-outfit`,
+    hat: `${idPrefix}-hat`,
+    gear: `${idPrefix}-gear`,
+    pet: `${idPrefix}-pet`,
+    shadow: `${idPrefix}-shadow`,
+  };
+  const paint = Object.fromEntries(
+    Object.entries(paintIds).map(([key, id]) => [key, `url(#${id})`]),
+  );
+
+  const headColor = paint.skin;
+  const hairColor = paint.hair;
   const eyeColor = config.eye_color || '#333333';
   const mouthColor = config.mouth_color || '#cc6666';
-  const bodyColor = config.body_color || hairColor;
-  const hatColor = config.hat_color || '#f39c12';
-  const accessoryColor = config.accessory_color || '#3b82f6';
-  const petColors = buildPetColors(config);
+  const bodyColor = paint.outfit;
+  const hatColor = paint.hat;
+  const accessoryColor = paint.gear;
+  const petColors = {
+    ...buildPetColors(config),
+    body: paint.pet,
+  };
 
   const headShape = config.head || 'round';
   const hairStyle = config.hair || config.hair_style || 'short';
@@ -150,9 +172,57 @@ function SvgAvatar({ config, size }) {
       width={size}
       height={size}
       viewBox="0 0 32 32"
-      className="avatar-svg rounded-full"
-      style={{ background: bgColor }}
+      className="avatar-svg avatar-illustration rounded-full"
+      role="img"
+      aria-label="Custom avatar"
     >
+      <defs>
+        <radialGradient id={paintIds.background} cx="32%" cy="24%" r="82%">
+          <stop offset="0%" stopColor={palette.background.light} />
+          <stop offset="58%" stopColor={palette.background.base} />
+          <stop offset="100%" stopColor={palette.background.deep} />
+        </radialGradient>
+        <linearGradient id={paintIds.skin} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={palette.skin.light} />
+          <stop offset="48%" stopColor={palette.skin.base} />
+          <stop offset="100%" stopColor={palette.skin.shadow} />
+        </linearGradient>
+        <linearGradient id={paintIds.hair} x1="0.12" y1="0" x2="0.82" y2="1">
+          <stop offset="0%" stopColor={palette.hair.highlight} />
+          <stop offset="32%" stopColor={palette.hair.base} />
+          <stop offset="100%" stopColor={palette.hair.deep} />
+        </linearGradient>
+        <linearGradient id={paintIds.outfit} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={palette.outfit.light} />
+          <stop offset="55%" stopColor={palette.outfit.base} />
+          <stop offset="100%" stopColor={palette.outfit.shadow} />
+        </linearGradient>
+        <linearGradient id={paintIds.hat} x1="0.15" y1="0" x2="0.85" y2="1">
+          <stop offset="0%" stopColor={palette.hat.highlight} />
+          <stop offset="52%" stopColor={palette.hat.base} />
+          <stop offset="100%" stopColor={palette.hat.deep} />
+        </linearGradient>
+        <linearGradient id={paintIds.gear} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={palette.gear.highlight} />
+          <stop offset="46%" stopColor={palette.gear.base} />
+          <stop offset="100%" stopColor={palette.gear.shadow} />
+        </linearGradient>
+        <linearGradient id={paintIds.pet} x1="0.1" y1="0" x2="0.9" y2="1">
+          <stop offset="0%" stopColor={palette.pet.light} />
+          <stop offset="55%" stopColor={palette.pet.base} />
+          <stop offset="100%" stopColor={palette.pet.shadow} />
+        </linearGradient>
+        <filter id={paintIds.shadow} x="-30%" y="-30%" width="160%" height="170%">
+          <feDropShadow dx="0" dy="0.55" stdDeviation="0.45" floodColor="#020617" floodOpacity="0.34" />
+        </filter>
+      </defs>
+
+      <circle cx="16" cy="16" r="16" fill={paint.background} />
+      <ellipse cx="10" cy="7" rx="9" ry="7" fill="white" opacity="0.06" />
+      <circle className="avatar-backdrop-orb" cx="26" cy="7" r="4.5" fill={palette.background.light} opacity="0.16" />
+      <path d="M3,25 Q10,21 16,24 T29,23 L32,32 L0,32 Z" fill={palette.background.deep} opacity="0.3" />
+
+      <g className="avatar-main-silhouette" filter={`url(#${paintIds.shadow})`}>
       {/* Accessories behind body (cape, wings, sword) — scaled to match body width */}
       {accessories.filter(a => a === 'cape' || a === 'wings' || a === 'sword').map(a => (
         <g key={a} transform={scaleAroundCenter(behindScale[a] || 1)}>
@@ -209,6 +279,17 @@ function SvgAvatar({ config, size }) {
           {i === 0 && <circle className="avatar-sparkle" cx="16" cy="23" r="0.6" fill="white" opacity="0" />}
         </g>
       ))}
+      </g>
+
+      <path
+        className="avatar-rim-light"
+        d="M9.5,10 Q10.8,5.8 15.2,5.2"
+        fill="none"
+        stroke="white"
+        strokeWidth="0.48"
+        strokeLinecap="round"
+        opacity="0.24"
+      />
 
       {/* Pet — wrapped for wiggle animation, grows with pet level */}
       <g className="avatar-pet">

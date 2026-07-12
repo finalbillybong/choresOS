@@ -6,6 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.dependencies import get_current_user, require_parent
 from backend.models import PushSubscription
+from backend.services.polish_push import (
+    NO_PUSH_SUBSCRIPTIONS_DETAIL,
+    format_push_test_result,
+    translate_push_payload,
+)
 from backend.services.push import get_vapid_public_key, send_push_to_user
 
 router = APIRouter(prefix="/api/push", tags=["push"])
@@ -105,13 +110,17 @@ async def test_push(
     )
     subs = sub_count.scalars().all()
     if not subs:
-        raise HTTPException(status_code=400, detail="No push subscriptions found. Toggle push off and on again.")
+        raise HTTPException(status_code=400, detail=NO_PUSH_SUBSCRIPTIONS_DETAIL)
 
+    title, body = translate_push_payload(
+        "ChoreQuest Test",
+        "Push notifications are working!",
+    )
     sent = await send_push_to_user(
         db, user.id,
-        title="ChoreQuest Test",
-        body="Push notifications are working!",
+        title=title,
+        body=body,
         url="/",
         tag="test",
     )
-    return {"detail": f"Sent to {sent}/{len(subs)} device(s)"}
+    return {"detail": format_push_test_result(sent, len(subs))}

@@ -139,7 +139,14 @@ function PushNotificationToggle() {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
-  const { theme, mode, setMode, colorTheme, setColorTheme } = useTheme();
+  const {
+    mode,
+    setMode,
+    colorTheme,
+    setColorTheme,
+    specialTheme,
+    personalThemeError,
+  } = useTheme();
 
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [nameSaving, setNameSaving] = useState(false);
@@ -662,6 +669,15 @@ export default function Profile() {
 
         {/* Color Theme */}
         <p className="text-muted text-xs font-medium mb-2">Color Theme</p>
+        {specialTheme !== 'none' ? (
+          <div className="mb-3 rounded-xl border border-accent/30 bg-accent/10 p-3 text-xs text-cream/80">
+            Rodzinny motyw świąteczny jest aktywny. Twój zwykły motyw pozostaje
+            zapisany i wróci po wyłączeniu motywu świątecznego.
+          </div>
+        ) : null}
+        {personalThemeError ? (
+          <p className="mb-3 text-xs text-crimson">{personalThemeError}</p>
+        ) : null}
         {['boy', 'girl'].map((group) => (
           <div key={group} className="mb-3">
             <p className="text-muted text-[11px] font-medium mb-1.5">
